@@ -1,0 +1,18 @@
+---
+description: Core conventions for the AI Fitness Coach project
+alwaysApply: true
+---
+
+# Project conventions
+
+Stack: MERN (MongoDB/Mongoose, Express, React, Node) + client-side TensorFlow.js/MediaPipe for pose estimation. Free-tier only.
+
+**Schema (see docs/decisions.md for full reasoning):**
+- Reference `User` from `Workout`, `MealLog`, `FormFeedback` via `userId` — never embed these inside `User`.
+- Embed `sets` directly inside `Workout` documents (small, bounded, always read together).
+- Stats/aggregation: compute on read via MongoDB aggregation pipelines. Do not add precomputed counter fields to `User`.
+- `FormFeedback` stores only detected issues + timestamp. Never store raw video or frame data.
+
+**Auth:** JWT via `Authorization: Bearer <token>` header, verified in `middleware/auth.js`. Never store per-request user data in module-level variables — always scope to `req.user`.
+
+**Code style:** Readable over clever. Every non-obvious line gets a short "why" comment, not a restatement of the code. Flag any implementation detail that isn't simple enough to justify and explain in code review.

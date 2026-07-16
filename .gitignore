@@ -1,0 +1,33 @@
+# Dependencies — reinstalled from package.json, never committed
+node_modules/
+
+# Environment variables — contains MONGO_URI and JWT_SECRET.
+# If this leaks, anyone can connect to your database directly,
+# or forge valid JWTs for any user. Never commit this.
+.env
+.env.local
+.env.*.local
+
+# Frontend build output (Milestone 3+, once client/ exists)
+client/build/
+client/dist/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS-generated junk
+.DS_Store
+Thumbs.db
+
+# Editor/IDE settings
+.vscode/
+.idea/
+*.swp
+
+# Test coverage output
+coverage/
+
+# Any exported keys/certs — should never live in the repo
+*.pem
