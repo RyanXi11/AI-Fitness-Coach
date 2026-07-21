@@ -16,3 +16,7 @@ Stack: MERN (MongoDB/Mongoose, Express, React, Node) + client-side TensorFlow.js
 **Auth:** JWT via `Authorization: Bearer <token>` header, verified in `middleware/auth.js`. Never store per-request user data in module-level variables — always scope to `req.user`.
 
 **Code style:** Readable over clever. Every non-obvious line gets a short "why" comment, not a restatement of the code. Flag any implementation detail that isn't simple enough to justify and explain in code review.
+
+**Mongoose gotchas (found in Milestone 2, apply project-wide):**
+- Aggregation `$match` stages do NOT auto-cast types the way `.find()`/`.findOne()` do. Always explicitly cast ObjectId fields: `new mongoose.Types.ObjectId(idString)`.
+- When sorting on a field that can tie (e.g. a date with no time component), add `_id: 1` as a secondary sort key for deterministic order — MongoDB does not guarantee order among tied documents otherwise.
