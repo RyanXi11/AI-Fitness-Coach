@@ -205,3 +205,167 @@ a:focus-visible {
 .dashboard section li {
   padding: 3px 0;
 }
+
+.dashboard>a {
+  color: var(--brass);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.dashboard>a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Workout logging form ---------- */
+
+.workout-form {
+  background: var(--slate-900);
+  border: 1px solid var(--slate-700);
+  border-radius: 6px;
+  padding: 24px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+}
+
+.workout-form h2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  margin: 0 0 4px;
+  color: var(--chalk);
+}
+
+.workout-form input,
+.workout-form textarea {
+  background: var(--slate-800);
+  border: 1px solid var(--slate-600);
+  border-radius: 4px;
+  padding: 10px 12px;
+  color: var(--chalk);
+  font-family: var(--font-body);
+  font-size: 14px;
+  width: 100%;
+}
+
+.workout-form input::placeholder,
+.workout-form textarea::placeholder {
+  color: var(--chalk-dim);
+}
+
+.workout-form textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: var(--font-body);
+}
+
+.set-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.set-row input {
+  flex: 1;
+}
+
+.set-row button {
+  background: transparent;
+  border: 1px solid var(--miss-red);
+  color: var(--miss-red);
+  border-radius: 4px;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.workout-form .add-set {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--slate-600);
+  color: var(--chalk-dim);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.workout-form .add-set:hover {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+.workout-form>button[type="submit"] {
+  background: var(--brass);
+  border: none;
+  border-radius: 4px;
+  padding: 12px;
+  color: var(--slate-950);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.workout-form>button[type="submit"]:hover {
+  background: #e2a13a;
+}
+
+.workout-form .success {
+  background: rgba(91, 169, 116, 0.12);
+  border: 1px solid var(--hit-green);
+  color: #a8d9b6;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ---------- Camera feed (Milestone 3 skeleton) ---------- */
+
+.camera-feed {
+  background: var(--slate-900);
+  border: 1px solid var(--slate-700);
+  border-radius: 6px;
+  padding: 24px;
+  max-width: 640px;
+}
+
+.camera-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 40px 20px;
+}
+
+.camera-placeholder p {
+  color: var(--chalk-dim);
+  font-family: var(--font-body);
+  font-size: 14px;
+  margin: 0;
+}
+
+.camera-placeholder button {
+  background: var(--brass);
+  border: none;
+  border-radius: 4px;
+  padding: 10px 18px;
+  color: var(--slate-950);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.camera-feed video {
+  width: 100%;
+  border-radius: 4px;
+  background: #000;
+}

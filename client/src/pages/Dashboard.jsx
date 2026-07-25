@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
+import WorkoutForm from '../components/WorkoutForm';
 
 export default function Dashboard() {
   const { logout } = useAuth();
@@ -36,6 +38,7 @@ export default function Dashboard() {
     <div className="dashboard">
       <div className="dashboard-header">
         <h1>Dashboard</h1>
+        <Link to="/session">Start form-check session</Link>
         <button onClick={logout}>Log out</button>
       </div>
 
@@ -55,6 +58,8 @@ export default function Dashboard() {
         <h2>Progression — Squat</h2>
         <p>{progression?.message}</p>
       </section>
+
+      <WorkoutForm onLogged={() => window.location.reload()} />
     </div>
   );
 }
