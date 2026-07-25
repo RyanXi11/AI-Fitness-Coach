@@ -1,0 +1,207 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root {
+  /* Color — cool graphite slate, not pure black; brass accent evokes a stamped plate */
+  --slate-950: #14171c;
+  --slate-900: #191d24;
+  --slate-800: #1e232b;
+  --slate-700: #2a313c;
+  --slate-600: #3a4250;
+  --chalk: #e7eaee;
+  --chalk-dim: #8b93a1;
+  --brass: #d4952b;
+  --brass-dim: #a9762699;
+  --hit-green: #5ba974;
+  --miss-red: #c1554b;
+
+  /* Type */
+  --font-display: 'Archivo Black', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--slate-950);
+  color: var(--chalk);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+/* ---------- Auth pages (login / register) ---------- */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 380px;
+  background: var(--slate-900);
+  border: 1px solid var(--slate-700);
+  border-radius: 6px;
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-form h1 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  margin: 0 0 8px;
+  color: var(--chalk);
+}
+
+.auth-form input {
+  background: var(--slate-800);
+  border: 1px solid var(--slate-600);
+  border-radius: 4px;
+  padding: 11px 12px;
+  color: var(--chalk);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+.auth-form input::placeholder {
+  color: var(--chalk-dim);
+}
+
+.auth-form button {
+  margin-top: 6px;
+  background: var(--brass);
+  border: none;
+  border-radius: 4px;
+  padding: 12px;
+  color: var(--slate-950);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.auth-form button:hover {
+  background: #e2a13a;
+}
+
+.auth-form p {
+  font-size: 13px;
+  color: var(--chalk-dim);
+  margin: 4px 0 0;
+}
+
+.auth-form a {
+  color: var(--brass);
+  text-decoration: none;
+}
+
+.auth-form a:hover {
+  text-decoration: underline;
+}
+
+.auth-form .error {
+  background: rgba(193, 85, 75, 0.12);
+  border: 1px solid var(--miss-red);
+  color: #e8a39d;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ---------- Dashboard ---------- */
+
+.dashboard {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.dashboard-header h1 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  margin: 0;
+}
+
+.dashboard-header button {
+  background: transparent;
+  border: 1px solid var(--slate-600);
+  color: var(--chalk-dim);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dashboard-header button:hover {
+  border-color: var(--chalk-dim);
+  color: var(--chalk);
+}
+
+.dashboard section {
+  /* The signature element: a thick brass rim on the left, like a stamped
+     weight plate — every stat block reads as "a plate on the rack" */
+  background: var(--slate-900);
+  border: 1px solid var(--slate-700);
+  border-left: 4px solid var(--brass);
+  border-radius: 6px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+
+.dashboard section h2 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--chalk-dim);
+  margin: 0 0 10px;
+}
+
+.dashboard section p {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--chalk);
+}
+
+.dashboard section ul {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--chalk-dim);
+}
+
+.dashboard section li {
+  padding: 3px 0;
+}
