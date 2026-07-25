@@ -20,3 +20,8 @@ Stack: MERN (MongoDB/Mongoose, Express, React, Node) + client-side TensorFlow.js
 **Mongoose gotchas (found in Milestone 2, apply project-wide):**
 - Aggregation `$match` stages do NOT auto-cast types the way `.find()`/`.findOne()` do. Always explicitly cast ObjectId fields: `new mongoose.Types.ObjectId(idString)`.
 - When sorting on a field that can tie (e.g. a date with no time component), add `_id: 1` as a secondary sort key for deterministic order — MongoDB does not guarantee order among tied documents otherwise.
+
+**Frontend conventions (Milestone 3):**
+- JWT is stored in `localStorage`, attached to every request via an axios interceptor (`api/axios.js`) — never attach it manually per-call.
+- `ProtectedRoute` is a UX convenience only, not a security boundary. Every backend route must independently filter by `req.user.id` — never assume the frontend check is sufficient.
+- React clears DOM refs to `null` synchronously on unmount, BEFORE `useEffect` cleanup functions run. Never rely on a DOM ref (e.g. a `<video>` ref) still being populated inside that same component's unmount cleanup — store any value that must survive to cleanup (like a MediaStream) in its own separate ref instead.

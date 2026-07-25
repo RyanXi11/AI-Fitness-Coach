@@ -91,3 +91,48 @@ Sorting workouts by `date` alone doesn't guarantee order between documents that 
 ### Bug found: aggregation pipeline silently returning empty results
 
 Mongoose auto-casts query filters to the correct type for `.find()`/`.findOne()` based on the schema, but raw aggregation `$match` stages bypass that casting layer. Comparing a plain string `userId` against stored ObjectIds silently matched nothing. Fixed by explicitly casting: `new mongoose.Types.ObjectId(req.user.id)` inside `$match`. Relevant for any future aggregation work (Milestone 5's leaderboard will need this same cast).
+
+---
+
+## Milestone 3 — React frontend + form checking setup
+
+### Decision: JWT storage location — localStorage
+
+**Considered:**
+- `localStorage`: simple, survives page refresh, but readable by any JS running on the page (real risk only if an XSS vulnerability exists).
+- In-memory only (React state, never persisted): closes the XSS-read risk, but logs the user out on every page refresh.
+- httpOnly cookie: closes the XSS-read risk without sacrificing persistence, but requires cookie-based auth wiring, CORS-with-credentials, and CSRF mitigation.
+
+**Chose:** localStorage.
+
+**Why:** The realistic threat model for a 3-5 person app with no untrusted user-generated content rendered as raw HTML is low — the specific risk localStorage carries has little actual attack surface here. httpOnly cookies solve a problem this app doesn't currently have, at real implementation cost (more backend plumbing, harder cross-origin cookie handling once frontend/backend deploy to separate hosts in Milestone 5). Also the pattern most MERN tutorials and interview discussions assume by default. Flagged as worth revisiting if a future feature ever renders unsanitized user content.
+
+### Decision: Camera permission pattern — explicit button, not auto-request
+
+**Considered:**
+- Auto-request camera access the moment the component mounts.
+- Explicit "Enable camera" button; nothing happens until clicked.
+
+**Chose:** Explicit button.
+
+**Why:** Browsers increasingly suppress auto-triggered permission prompts after repeated denials, with no easy in-page reset. An explicit button matches real video-calling apps (Zoom, Meet), gives a natural moment to explain why camera access is needed, and provides a clean retry path on denial.
+
+### Architecture: Context for auth state, axios interceptor for JWT attachment
+
+`AuthProvider` (React Context) holds login state so any component can call `useAuth()` directly, avoiding prop-drilling through the component tree — appropriate at this app's scale; a state library like Redux would be overkill. A single axios interceptor in `api/axios.js` attaches the JWT to every outgoing request automatically, rather than adding it manually to each API call.
+
+### Decision: `ProtectedRoute` is a UX layer, not a security boundary
+
+The actual security guarantee is entirely server-side — every backend route already filters by `req.user.id` from the verified JWT (Milestone 1/2). `ProtectedRoute` only prevents an unauthenticated user from seeing a broken page: without it, a logged-out user hitting `/dashboard` would have the page render, its API calls fail with 401s, and — due to how the `try/catch` in `Dashboard.jsx` is structured — silently display "0 workouts logged" instead of a clean redirect to `/login`. Backend enforces security; frontend enforces a correct, honest experience.
+
+### Bug found: missing CSS import silently lost during a routing rewrite
+
+`App.jsx` was rewritten to add React Router setup, and the original `import './App.css'` line was dropped in the process — resulting in completely unstyled, default-browser-look pages with no error. Fixed by re-adding the import. Lesson: a full-file rewrite risks silently dropping unrelated lines that weren't the focus of the change.
+
+### Bug found: no route matched `/`, producing a blank white screen
+
+`<Routes>` only defined `/login`, `/register`, `/dashboard` — nothing matched the bare root path, so nothing rendered (confirmed via React Router's own console warning, not a thrown error). Fixed by adding `<Route path="/" element={<Navigate to="/dashboard" replace />} />`, which chains correctly into `ProtectedRoute`'s own redirect to `/login` for logged-out users.
+
+### Bug found: camera stream not released after navigating away
+
+The `useEffect` cleanup function read `videoRef.current?.srcObject` to find and stop the active MediaStream. But React clears a DOM ref back to `null` synchronously during unmount — *before* `useEffect` cleanup functions run (which fire asynchronously, after paint). By the time cleanup executed, `videoRef.current` was already `null`, so the stream was never actually stopped — confirmed visually via the laptop's camera indicator light staying on after leaving `/session`. Fixed by storing the `MediaStream` itself in a separate, plain ref (`streamRef`) with no DOM lifecycle tied to it, so cleanup could reliably access and stop it regardless of `videoRef`'s state. General lesson: don't rely on a DOM ref to still hold meaningful data inside its own component's unmount cleanup.
