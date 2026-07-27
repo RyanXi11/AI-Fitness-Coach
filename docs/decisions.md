@@ -136,3 +136,58 @@ The actual security guarantee is entirely server-side — every backend route al
 ### Bug found: camera stream not released after navigating away
 
 The `useEffect` cleanup function read `videoRef.current?.srcObject` to find and stop the active MediaStream. But React clears a DOM ref back to `null` synchronously during unmount — *before* `useEffect` cleanup functions run (which fire asynchronously, after paint). By the time cleanup executed, `videoRef.current` was already `null`, so the stream was never actually stopped — confirmed visually via the laptop's camera indicator light staying on after leaving `/session`. Fixed by storing the `MediaStream` itself in a separate, plain ref (`streamRef`) with no DOM lifecycle tied to it, so cleanup could reliably access and stop it regardless of `videoRef`'s state. General lesson: don't rely on a DOM ref to still hold meaningful data inside its own component's unmount cleanup.
+
+---
+
+## Milestone 4 — Form checking with pose estimation
+
+### Decision: Exercise scope — squat only
+
+**Considered:** squat vs. push-up (both named in the original plan), and whether to attempt both in this milestone.
+
+**Chose:** squat only; push-up deferred to a possible Milestone 6-7 bonus.
+
+**Why:** Camera-positioning reasoning weakened once phone-at-gym became the realistic context (a phone can be propped for either exercise). The real deciding factor: squat is already the exercise the whole app is built around (progression algorithm, all Milestone 2 test data) — pairing pose-checking with the same lift creates one cohesive feature story. Building both exercises in this milestone was explicitly rejected given it's the tightest, "sprint mode" window — doubling scope risked doing both halfway.
+
+*Clarified: the progression algorithm already generalizes to any exercise (`getProgressionSuggestion(userId, exercise)` was never hardcoded) — only pose-estimation form-checking is squat-specific and would need real, non-trivial work per additional exercise.*
+
+### Decision: Depth threshold — fixed, not calibrated per user
+
+**Considered:** a single fixed angle threshold for everyone vs. a calibration step (user performs one known-good rep to set their own baseline).
+
+**Chose:** fixed threshold.
+
+**Why:** Consistent with how the RPE/effort limitation was handled in Milestone 2 — name a real, honest limitation rather than over-build under a tight deadline. Calibration is a legitimate stronger approach, explicitly logged as a "what I'd improve next" item.
+
+### Algorithm: rep detection state machine
+
+Checking the angle against a threshold on every frame produces continuous false warnings throughout a rep's descent and ascent, since shallow angles are passed through on the way to and from the bottom. Instead: a state machine (`standing → descending → bottom → ascending → standing`) evaluates depth exactly once per rep, at the moment the angle stops decreasing and starts increasing — the actual bottom of the movement. Landmarks used: left hip (23), left knee (25), left ankle (27); angle computed via `atan2` at the knee vertex.
+
+### Depth threshold — tuned against real data, not guessed
+
+A genuine good-depth rep measured ~70°; a deliberately shallow rep measured ~140°. Initial threshold set to 100° — leaning strict of the exact midpoint (105°) deliberately, since for a coaching tool, a false "good depth!" on a shallow rep is worse than an overly cautious "not deep enough" on a good one (the former reinforces bad form). Later tightened further to 95° after additional testing, staying within the standard "parallel squat" convention (~90-100°) rather than pushing stricter than that range.
+
+### Bug found: uncaught error inside a useEffect crashed the entire app
+
+Calling `detectForVideo()` before the video element had real frame data throws. This happened on the very first, synchronous call inside a `useEffect` — and an uncaught error inside a `useEffect`, with no error boundary anywhere in the app, causes React to unmount the *entire* component tree, not just the offending component. Symptom: a completely blank page (no header, no button) immediately after granting camera permission, with the camera light turning back off as every cleanup function fired during the crash-unmount. Fixed by guarding against calling detection until `video.readyState >= 2 && video.videoWidth > 0`, plus wrapping the detection call in `try/catch` so no single bad frame can take down the app again. General lesson: any code that can throw and runs synchronously inside an effect needs its own guard/error handling — the failure blast radius is the whole app, not just that feature, without an error boundary.
+
+### Bug found: noisy single-frame comparisons caused inconsistent rep detection
+
+Bottom-detection compared only two consecutive raw frames (`angle >= prevAngle`). Pose landmark detection is noisy frame-to-frame — even during a real, continuous descent, per-frame jitter can make the angle briefly tick upward, which the code treated as a full direction reversal. Symptom: phase flipping to "ascending" mid-descent; inconsistent good/bad depth verdicts on visually similar reps. Fixed with a simple moving-average smoothing filter (5-frame window) applied to the raw angle before it reaches the state machine — a basic low-pass filter, trading a small amount of lag for much more reliable direction detection.
+
+### Bug found: silent tracking loss looked identical to a frozen UI
+
+When `result.landmarks` came back empty (person out of frame, occlusion, marginal lighting), the code simply skipped updating state, leaving stale numbers on screen with no signal anything had changed — indistinguishable from a genuine freeze. Fixed by adding an explicit `trackingLost` state, surfaced as a real, permanent user-facing message rather than silently displaying stale data.
+
+### Bug found: postural sway logged false reps seconds apart
+
+Discovered by inspecting real logged timestamps — multiple `FormFeedback` documents only a few hundred milliseconds to a couple seconds apart, physically impossible for real squats. The state machine had no minimum duration or depth requirement for something to count as "a rep" — ordinary sway near the standing threshold (standing ~170°, threshold 160°, only a 10° gap) could dip below it and back, triggering a complete, logged (almost always "not deep enough") false rep. Fixed with two complementary safeguards: an 800ms minimum cooldown between logged reps, and a separate, stricter `DESCENT_CONFIRM_THRESHOLD` (140°, not 160°) required to even begin tracking a new rep attempt — a real hysteresis margin against sway. General lesson: discrete events derived from a continuous, noisy real-world signal need explicit debouncing, not just a single clean threshold.
+
+### Named limitation: camera angle affects measured depth
+
+The same real squat depth produces different measured angles depending on camera height/angle, since only 2D (x, y) landmark coordinates are used, not MediaPipe's noisier depth (z) estimate — a known limitation of monocular pose estimation generally. Mitigation: use a consistent camera position in practice. Logged as future work rather than solved now (would require incorporating z, or a multi-camera setup).
+
+### Confidence thresholds lowered from defaults
+
+`minPoseDetectionConfidence`, `minPosePresenceConfidence`, `minTrackingConfidence` lowered from their 0.5 defaults to 0.3, to reduce false "no person detected" dropouts in marginal framing conditions. Explicit tradeoff: accepts slightly noisier landmark data on marginal frames in exchange for fewer dropouts — the moving-average smoothing already in place helps absorb the added noise.
+

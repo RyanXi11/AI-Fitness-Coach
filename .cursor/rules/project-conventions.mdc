@@ -25,3 +25,9 @@ Stack: MERN (MongoDB/Mongoose, Express, React, Node) + client-side TensorFlow.js
 - JWT is stored in `localStorage`, attached to every request via an axios interceptor (`api/axios.js`) — never attach it manually per-call.
 - `ProtectedRoute` is a UX convenience only, not a security boundary. Every backend route must independently filter by `req.user.id` — never assume the frontend check is sufficient.
 - React clears DOM refs to `null` synchronously on unmount, BEFORE `useEffect` cleanup functions run. Never rely on a DOM ref (e.g. a `<video>` ref) still being populated inside that same component's unmount cleanup — store any value that must survive to cleanup (like a MediaStream) in its own separate ref instead.
+
+**Real-time / sensor-like data conventions (Milestone 4):**
+- Any code that can throw and runs synchronously inside a `useEffect` body needs a readiness guard and/or try/catch — an uncaught error inside an effect crashes the ENTIRE React tree, not just that component, since no error boundary exists in this app.
+- Continuous real-world signals (pose landmarks, sensor readings) are noisy frame-to-frame. Smooth with a moving average before feeding into any discrete state machine or threshold check — comparing raw consecutive readings amplifies noise into false transitions.
+- Discrete events derived from a noisy continuous signal need explicit debouncing (a minimum time between events, and/or a stricter "confirm" threshold separate from the "reset" threshold) — a single clean threshold alone is not enough to prevent false triggers from jitter/sway.
+- Squat form-check constants (tuned against real test data, not defaults): depth threshold 95°, standing threshold 160°, descent-confirm threshold 140°, min rep duration 800ms.
