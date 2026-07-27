@@ -206,7 +206,7 @@ a:focus-visible {
   padding: 3px 0;
 }
 
-.dashboard>a {
+.dashboard > a {
   color: var(--brass);
   font-family: var(--font-body);
   font-weight: 600;
@@ -214,7 +214,7 @@ a:focus-visible {
   text-decoration: none;
 }
 
-.dashboard>a:hover {
+.dashboard > a:hover {
   text-decoration: underline;
 }
 
@@ -301,7 +301,7 @@ a:focus-visible {
   color: var(--brass);
 }
 
-.workout-form>button[type="submit"] {
+.workout-form > button[type="submit"] {
   background: var(--brass);
   border: none;
   border-radius: 4px;
@@ -313,7 +313,7 @@ a:focus-visible {
   cursor: pointer;
 }
 
-.workout-form>button[type="submit"]:hover {
+.workout-form > button[type="submit"]:hover {
   background: #e2a13a;
 }
 
@@ -368,4 +368,11 @@ a:focus-visible {
   width: 100%;
   border-radius: 4px;
   background: #000;
+}
+
+.tracking-lost {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--miss-red);
+  margin-top: 8px;
 }
