@@ -31,3 +31,7 @@ Stack: MERN (MongoDB/Mongoose, Express, React, Node) + client-side TensorFlow.js
 - Continuous real-world signals (pose landmarks, sensor readings) are noisy frame-to-frame. Smooth with a moving average before feeding into any discrete state machine or threshold check — comparing raw consecutive readings amplifies noise into false transitions.
 - Discrete events derived from a noisy continuous signal need explicit debouncing (a minimum time between events, and/or a stricter "confirm" threshold separate from the "reset" threshold) — a single clean threshold alone is not enough to prevent false triggers from jitter/sway.
 - Squat form-check constants (tuned against real test data, not defaults): depth threshold 95°, standing threshold 160°, descent-confirm threshold 140°, min rep duration 800ms.
+- Never hardcode a fixed body side (left/right) for pose landmarks — filming from the side, one side is naturally occluded and less reliable. Use MediaPipe's per-landmark `visibility` score to dynamically pick whichever side is actually visible each frame. Relevant to any future exercise (e.g. push-up).
+
+**Data retention:**
+- Collections with no long-horizon read pattern (e.g. FormFeedback) use a MongoDB TTL index (`expires: '30d'` on the Date field) to auto-delete old documents — zero app code needed. Extends the lean-storage philosophy; apply the same pattern to any future collection with similar characteristics (high write volume, no need for indefinite retention).

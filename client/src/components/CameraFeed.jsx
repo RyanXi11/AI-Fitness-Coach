@@ -3,11 +3,14 @@ import { useRef, useState, useEffect } from 'react';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import api from '../api/axios';
 
-// MediaPipe Pose's 33-landmark topology — these three indices are fixed
-// by the model itself, not something we choose
+// MediaPipe Pose's 33-landmark topology — these indices are fixed by
+// the model itself, not something we choose
 const LEFT_HIP = 23;
 const LEFT_KNEE = 25;
 const LEFT_ANKLE = 27;
+const RIGHT_HIP = 24;
+const RIGHT_KNEE = 26;
+const RIGHT_ANKLE = 28;
 
 // The angle at which we consider a rep "deep enough." Fixed threshold,
 // per the locked design decision — not calibrated per user. Originally
@@ -36,6 +39,21 @@ function calculateAngle(a, b, c) {
   let angle = Math.abs((radians * 180) / Math.PI);
   if (angle > 180) angle = 360 - angle; // atan2 can return >180 for some configurations
   return angle;
+}
+
+// Filming from the side, one side of the body is naturally occluded by
+// the torso and near leg — MediaPipe has to infer those landmarks
+// rather than see them directly, making them less reliable. Rather
+// than hardcoding a side (which breaks if the user faces the other
+// way), use MediaPipe's own per-landmark `visibility` score to pick
+// whichever side is actually clearly visible this frame.
+function getVisibleSideLandmarks(points) {
+  const leftVisibility = points[LEFT_HIP].visibility + points[LEFT_KNEE].visibility + points[LEFT_ANKLE].visibility;
+  const rightVisibility = points[RIGHT_HIP].visibility + points[RIGHT_KNEE].visibility + points[RIGHT_ANKLE].visibility;
+
+  return leftVisibility >= rightVisibility
+    ? { hip: points[LEFT_HIP], knee: points[LEFT_KNEE], ankle: points[LEFT_ANKLE] }
+    : { hip: points[RIGHT_HIP], knee: points[RIGHT_KNEE], ankle: points[RIGHT_ANKLE] };
 }
 
 export default function CameraFeed() {
@@ -151,11 +169,8 @@ export default function CameraFeed() {
           const result = landmarker.detectForVideo(video, performance.now());
           if (result.landmarks.length > 0) {
             const points = result.landmarks[0];
-            const rawAngle = calculateAngle(
-              points[LEFT_HIP],
-              points[LEFT_KNEE],
-              points[LEFT_ANKLE]
-            );
+            const { hip, knee, ankle } = getVisibleSideLandmarks(points);
+            const rawAngle = calculateAngle(hip, knee, ankle);
             const smoothedAngle = getSmoothedAngle(rawAngle);
             processAngle(smoothedAngle);
             setTrackingLost(false);

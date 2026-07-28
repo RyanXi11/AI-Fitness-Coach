@@ -191,3 +191,15 @@ The same real squat depth produces different measured angles depending on camera
 
 `minPoseDetectionConfidence`, `minPosePresenceConfidence`, `minTrackingConfidence` lowered from their 0.5 defaults to 0.3, to reduce false "no person detected" dropouts in marginal framing conditions. Explicit tradeoff: accepts slightly noisier landmark data on marginal frames in exchange for fewer dropouts — the moving-average smoothing already in place helps absorb the added noise.
 
+### Gap found (via review, not live testing): hardcoded left side broke if the user faced the other way
+
+The code hardcoded `LEFT_HIP`/`LEFT_KNEE`/`LEFT_ANKLE` as an implementation default, never presented as a deliberate decision. Filming from the side, one side of the body is naturally occluded by the torso and near leg — MediaPipe infers those landmarks rather than seeing them directly, making them less reliable. Hardcoding "left" implicitly assumed a fixed body orientation; facing the other way would silently trust the occluded, less accurate side with nothing to notice or correct for it. Caught by direct scrutiny of the code, not live bug reproduction. Fixed using MediaPipe's per-landmark `visibility` confidence score to dynamically select whichever side has higher combined visibility each frame. General lesson: an unstated implementation default is still a design decision — just one nobody reviewed.
+
+### Decision: FormFeedback documents auto-expire after 30 days (MongoDB TTL index)
+
+**Considered:** keep all documents forever; a MongoDB TTL index (auto-delete past a set age, in the background); a manual/periodic cleanup script.
+
+**Chose:** TTL index, 30-day retention — `timestamp: { type: Date, default: Date.now, expires: '30d' }` in the Mongoose schema.
+
+**Why:** every completed rep during a form-check session creates its own document — over months of real 5x/week use, this could accumulate to thousands of entries. Nothing in the app currently reads or aggregates FormFeedback over a long time horizon, so most of a rep's value is in the moment right after that set. A TTL index requires zero application code and directly extends the lean-storage philosophy already locked for this collection in Milestone 1. 30 days balances still being able to glance back at recent sessions against keeping the collection genuinely bounded.
+
