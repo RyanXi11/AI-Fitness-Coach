@@ -1,13 +1,114 @@
 // routes/mealLogs.js
 const express = require('express');
+const { GoogleGenAI } = require('@google/genai');
 const auth = require('../middleware/auth');
 const MealLog = require('../models/MealLog');
 
 const router = express.Router();
 router.use(auth);
 
+// Client picks up GEMINI_API_KEY from process.env automatically
+const client = new GoogleGenAI({});
+
+// The schema Gemini is required to follow — this is what makes the
+// response reliably parseable JSON, rather than hoping a plain-text
+// prompt happens to come back clean.
+const nutritionSchema = {
+  type: 'object',
+  properties: {
+    foodDescription: { type: 'string' },
+    estimatedCalories: { type: 'number' }
+  },
+  required: ['foodDescription', 'estimatedCalories']
+};
+
+// Each model has its OWN separate free-tier quota — trying multiple
+// models isn't just retry-on-failure, it pools several independent
+// daily budgets into one effective combined quota. Only models that
+// actually fit this task are included — many models on the dashboard
+// (image/video/audio generation, embeddings, robotics, live/streaming
+// APIs) can't take a photo and return text at all, so they're excluded
+// regardless of their quota. Ordered by remaining daily headroom: the
+// two Lite models (500 RPD each) first, then the smaller-quota models
+// (20 RPD each, ~80 more combined), with gemini-3.5-flash last since
+// its daily quota is already exhausted for today specifically.
+const MODEL_FALLBACK_ORDER = [
+  'gemini-3.5-flash-lite',   // 500 RPD
+  'gemini-3.1-flash-lite',   // 500 RPD
+  'gemini-2.5-flash-lite',   // 20 RPD
+  'gemini-2.5-flash',        // 20 RPD
+  'gemini-3-flash',          // 20 RPD
+  'gemini-3.6-flash',        // 20 RPD
+  'gemini-3.5-flash'         // 20 RPD, already exhausted for today
+];
+
+async function analyzeMealPhoto(image, mimeType) {
+  let lastError;
+
+  for (const model of MODEL_FALLBACK_ORDER) {
+    try {
+      const interaction = await client.interactions.create({
+        model,
+        input: [
+          {
+            type: 'text',
+            text: 'Identify the food in this photo and estimate its total calorie count. Be realistic about portion size.'
+          },
+          { type: 'image', data: image, mime_type: mimeType }
+        ],
+        response_format: {
+          type: 'text',
+          mime_type: 'application/json',
+          schema: nutritionSchema
+        }
+      });
+      return { ...JSON.parse(interaction.output_text), modelUsed: model }; // success — stop trying further models
+    } catch (err) {
+      lastError = err;
+      // Only fall through to the next model on a genuine rate-limit
+      // error. Any other failure (bad request, invalid schema, etc.)
+      // would fail identically on every model — no point retrying it.
+      if (err.status !== 429) throw err;
+    }
+  }
+
+  throw lastError; // every model in the fallback list was rate-limited
+}
+
+router.post('/', async (req, res) => {
+  try {
+    const { image, mimeType } = req.body; // image = base64 string, never written to disk
+
+    if (!image || !mimeType) {
+      return res.status(400).json({ error: 'image and mimeType are required' });
+    }
+
+    const result = await analyzeMealPhoto(image, mimeType);
+    console.log(`Meal photo analyzed using model: ${result.modelUsed}`);
+
+    const mealLog = await MealLog.create({
+      userId: req.user.id,
+      foodDescription: result.foodDescription,
+      estimatedCalories: result.estimatedCalories
+    });
+
+    res.status(201).json(mealLog);
+    // Note: `image` (the base64 photo data) is never saved anywhere —
+    // it existed only in memory for the duration of this request, and
+    // is discarded the moment this function returns.
+  } catch (err) {
+    console.error('Meal photo analysis failed:', err);
+
+    if (err.status === 429) {
+      return res.status(429).json({ error: 'Meal analysis is rate-limited across all available models right now — try again shortly.' });
+    }
+
+    res.status(500).json({ error: 'Failed to analyze meal photo' });
+  }
+});
+
 router.get('/', async (req, res) => {
-  const mealLogs = await MealLog.find({ userId: req.user.id });
+  const mealLogs = await MealLog.find({ userId: req.user.id }).sort({ date: -1 });
   res.json(mealLogs);
 });
 

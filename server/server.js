@@ -16,7 +16,7 @@ const app = express();
 connectDB(); // connect to MongoDB Atlas — do this before the server starts accepting requests
 
 app.use(cors()); // allows the React frontend (a different origin) to call this API later, in Milestone 3
-app.use(express.json()); // parses incoming JSON bodies into req.body — without this, req.body is undefined
+app.use(express.json({ limit: '10mb' })); // parses incoming JSON bodies into req.body — without this, req.body is undefined. base64-encoded meal photos exceed the default 100kb limit
 
 // Mount each route file under its resource path
 app.use('/api/auth', authRoutes);
