@@ -206,7 +206,7 @@ a:focus-visible {
   padding: 3px 0;
 }
 
-.dashboard > a {
+.dashboard>a {
   color: var(--brass);
   font-family: var(--font-body);
   font-weight: 600;
@@ -214,7 +214,7 @@ a:focus-visible {
   text-decoration: none;
 }
 
-.dashboard > a:hover {
+.dashboard>a:hover {
   text-decoration: underline;
 }
 
@@ -301,7 +301,7 @@ a:focus-visible {
   color: var(--brass);
 }
 
-.workout-form > button[type="submit"] {
+.workout-form>button[type="submit"] {
   background: var(--brass);
   border: none;
   border-radius: 4px;
@@ -313,7 +313,7 @@ a:focus-visible {
   cursor: pointer;
 }
 
-.workout-form > button[type="submit"]:hover {
+.workout-form>button[type="submit"]:hover {
   background: #e2a13a;
 }
 
@@ -375,4 +375,68 @@ a:focus-visible {
   font-size: 13px;
   color: var(--miss-red);
   margin-top: 8px;
+}
+
+/* ---------- Meal photo upload ---------- */
+
+.meal-upload {
+  background: var(--slate-900);
+  border: 1px solid var(--slate-700);
+  border-radius: 6px;
+  padding: 24px 26px;
+  max-width: 480px;
+}
+
+.meal-upload h2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  margin: 0 0 14px;
+  color: var(--chalk);
+}
+
+.photo-input-label {
+  display: inline-block;
+  background: var(--brass);
+  border-radius: 4px;
+  padding: 10px 18px;
+  color: var(--slate-950);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.photo-input-label:hover {
+  background: #e2a13a;
+}
+
+.meal-preview {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-top: 14px;
+}
+
+.meal-result {
+  margin-top: 14px;
+  border-left: 3px solid var(--brass);
+  padding-left: 12px;
+}
+
+.meal-result .food-description {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--chalk);
+  margin: 0 0 4px;
+}
+
+.meal-result .calorie-estimate {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--chalk);
+  margin: 0;
 }

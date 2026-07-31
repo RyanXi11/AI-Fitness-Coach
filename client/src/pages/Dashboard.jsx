@@ -4,6 +4,7 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import WorkoutForm from '../components/WorkoutForm';
+import MealPhotoUpload from '../components/MealPhotoUpload';
 
 export default function Dashboard() {
   const { logout } = useAuth();
@@ -60,6 +61,7 @@ export default function Dashboard() {
       </section>
 
       <WorkoutForm onLogged={() => window.location.reload()} />
+      <MealPhotoUpload />
     </div>
   );
 }
