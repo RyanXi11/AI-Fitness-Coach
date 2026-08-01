@@ -15,7 +15,15 @@ const app = express();
 
 connectDB(); // connect to MongoDB Atlas — do this before the server starts accepting requests
 
-app.use(cors()); // allows the React frontend (a different origin) to call this API later, in Milestone 3
+const allowedOrigins = [
+  'http://localhost:5173', // local dev
+  process.env.FRONTEND_URL // set this in Render's environment variables once you have your real Vercel URL
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' })); // parses incoming JSON bodies into req.body — without this, req.body is undefined. base64-encoded meal photos exceed the default 100kb limit
 
 // Mount each route file under its resource path
