@@ -203,3 +203,70 @@ The code hardcoded `LEFT_HIP`/`LEFT_KNEE`/`LEFT_ANKLE` as an implementation defa
 
 **Why:** every completed rep during a form-check session creates its own document — over months of real 5x/week use, this could accumulate to thousands of entries. Nothing in the app currently reads or aggregates FormFeedback over a long time horizon, so most of a rep's value is in the moment right after that set. A TTL index requires zero application code and directly extends the lean-storage philosophy already locked for this collection in Milestone 1. 30 days balances still being able to glance back at recent sessions against keeping the collection genuinely bounded.
 
+---
+
+## Milestone 5 — Meal photo calorie estimation + deployment
+
+### Decision: Meal photos are not persisted
+
+**Considered:** don't persist (analyze via Gemini Vision, discard immediately); store in cloud storage (Cloudinary free tier); store as base64 in MongoDB.
+
+**Chose:** don't persist — this revisited an implicit assumption baked into Milestone 1's schema (`photoUrl` field assumed a stored photo).
+
+**Why:** No verify criteria for this milestone required browsing old meal photos, only getting a calorie estimate. Directly extends the lean-storage philosophy already applied to `FormFeedback`. Base64-in-MongoDB was rejected outright — photos are large relative to every other document type in this app and would burn through the 512MB Atlas free tier fastest of any collection. `MealLog` schema revised: dropped `photoUrl`, added `foodDescription` (Gemini identifies the food, not just a bare calorie number).
+
+### Decision: MealLog documents do NOT get a TTL (unlike FormFeedback)
+
+**Considered:** applying the same 30-day TTL pattern used for FormFeedback, for consistency.
+
+**Chose:** no expiry — kept forever, like `Workouts`.
+
+**Why:** Ran the actual storage math rather than assuming the FormFeedback pattern transfers. FormFeedback's TTL was justified by extreme write volume (every rep) and low long-term value (rep-level detail isn't useful later). MealLog has neither property: realistic write volume (~15 documents/day across 5 users) works out to roughly 2.7MB/year — over a century before it threatened the 512MB free tier even combined with other unbounded collections. Nutrition data also has real foreseeable long-term value (a future "calorie trend over time" feature), making it architecturally closer to `Workouts` (kept forever, needed for progression history) than to `FormFeedback`. Lesson: don't apply a storage pattern just for consistency — verify the actual constraint it was solving still applies.
+
+### Decision: Barcode scanning and the friend layer deferred to future work
+
+Barcode scanning (reading a product barcode + Open Food Facts lookup for exact nutrition data) was raised as a genuinely feasible, separate feature — a different pipeline entirely from Gemini Vision's photo-based estimation. Deferred given this milestone was already substantial (photo pipeline + deployment).
+
+The friend layer (see friends' workouts/streaks, a leaderboard) was deferred entirely, not merely descoped. The person building this stated directly they don't personally care about seeing friends' progress. Per the project's own rule — "a feature I can't defend is worse than not having it" — a feature without genuine personal investment is unlikely to get the same real dogfooding that produced this project's strongest material (e.g., every Milestone 4 pose-detection bug was found through actually squatting in front of the camera repeatedly). Building it anyway risked a shallow, undertested feature added purely for milestone-completeness. Noted explicitly: the "multi-user auth with data isolation" resume claim was already fully earned in Milestone 1 and doesn't depend on this feature existing.
+
+### Gemini Vision integration: structured output + rate-limit handling
+
+Used `@google/genai` (the current Interactions API), with an explicit JSON schema passed via `response_format` to guarantee parseable structured output, rather than hoping a plain-text prompt returns clean JSON.
+
+### Bug found: Express default body size limit rejected photo uploads
+
+Default `express.json()` limit (100kb) rejected base64-encoded photo payloads. Fixed with `express.json({ limit: '10mb' })`.
+
+### Real-world constraint found: Gemini free-tier rate limits, and the fix
+
+Hit `429` errors during testing. Initial assumption (short retry-after in the error meant a brief per-minute limit) was wrong — checked the actual live usage dashboard and confirmed both the 5 RPM *and* the 20 RPD (daily) limits were exhausted; only a day-based reset would clear it, not waiting a few minutes.
+
+**Fix — multi-model fallback pooling:** each Gemini model carries its own separate quota. Built a fallback chain trying multiple models in order (highest daily quota first: two Lite variants at 500 RPD each, then several 20 RPD models, with the already-exhausted model last), pooling several independent daily budgets into one effective ~1,080 requests/day — not just retry-on-failure, genuine quota pooling. Only `429` errors trigger fallback; any other error re-throws immediately, since it would fail identically on every model. Added explicit 429 handling returning a clear "try again shortly" message (a real, confirmed scenario given the quota is shared across every friend using the app) instead of a generic failure, plus logging which model actually served each request for visibility into the fallback chain's behavior.
+
+### Bug found: premature page reload hid the meal analysis result
+
+`onLogged={() => window.location.reload()}` was copied directly from `WorkoutForm` without re-checking whether the reasoning applied. `setResult()` only schedules a re-render; the reload fired in the same instant, wiping the page before React ever painted the result. Unlike `WorkoutForm` (where reloading served a real purpose — refreshing dashboard stats elsewhere on the page), this component's entire job is showing the result, and nothing on the dashboard depends on meal log data. Fixed by removing the reload entirely. General lesson: reusing a working pattern without re-asking "why did this exist there, and does that reason hold here" is exactly how this class of bug happens.
+
+### Improvement: client-side image resizing before upload
+
+Downscaled photos to a 1024px max dimension (canvas re-encode, JPEG quality 0.8) before sending to the backend. Food/portion identification depends on overall shape and proportion, not fine pixel detail — a modern phone photo carries far more resolution than the task needs, adding real network transfer time and likely model latency for no benefit. Only scales down, never up (upscaling a smaller image adds no real detail).
+
+### Deployment: Render (backend) + Vercel (frontend)
+
+**Considered for backend:** Render, Railway, Fly.io. **Chose:** Render — confirmed via live research that Railway removed its free tier in 2024 (billed from the first minute), and Fly.io's current free-tier status is genuinely contested across sources (some report it requires a credit card with no lasting free option). Render was the only option with no card requirement and no conflicting reports, directly satisfying the project's founding "must stay free-tier" constraint. Known tradeoff accepted: free-tier services spin down after inactivity, adding ~50+ seconds to the first request after idle time — reasonable for a personal app used by a few friends, not a public product.
+
+**Region:** matched to MongoDB Atlas's existing region (N. Virginia) rather than optimizing purely for user proximity — the backend-to-database round-trip happens on every single request, making it the dominant latency factor over backend-to-user distance.
+
+### Bug found: SPA routes returned Vercel's 404 on page refresh
+
+Refreshing on a nested client-side route (e.g. `/login`) returned Vercel's own 404 page — confirmed via DevTools showing the failed request's `Type: Document` (a real browser navigation request, not client-side routing) and the response ID matching Vercel's own infrastructure format. Client-side routing (React Router) only intercepts navigation *within* a running app; a refresh sends a fresh HTTP request straight to the host for that literal path, and no file exists there in a Vite SPA build (only `index.html` plus static assets). Fixed with `client/vercel.json`, adding a rewrite rule serving `index.html` for any unmatched path, letting React Router take over once it loads — a near-universal requirement for any SPA deployed to a static host, not an edge case specific to this app.
+
+### Bug found: CORS blocked the deployed frontend
+
+`"No 'Access-Control-Allow-Origin' header is present"` — confirmed via the exact browser Console error rather than guessed at. Caused by `FRONTEND_URL` (Render's environment variable feeding the backend's CORS allowlist) either being unset or not exactly matching the real Vercel URL — `Origin` header comparisons are exact-match, so a trailing slash or `http` vs `https` mismatch fails silently. Fixed by setting `FRONTEND_URL` to the precise deployed Vercel URL and redeploying.
+
+### Two Vite/environment-variable facts worth remembering
+
+- Variables exposed to Vite's client-side bundle must be prefixed `VITE_` — a deliberate safety boundary preventing accidental leakage of server-only secrets into browser-shipped code.
+- Vite bakes environment variables in at **build time**, not runtime — changing an env var after a deploy already ran requires triggering a fresh build for it to take effect, not just a restart.
+

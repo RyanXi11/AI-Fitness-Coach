@@ -34,4 +34,15 @@ Stack: MERN (MongoDB/Mongoose, Express, React, Node) + client-side TensorFlow.js
 - Never hardcode a fixed body side (left/right) for pose landmarks — filming from the side, one side is naturally occluded and less reliable. Use MediaPipe's per-landmark `visibility` score to dynamically pick whichever side is actually visible each frame. Relevant to any future exercise (e.g. push-up).
 
 **Data retention:**
-- Collections with no long-horizon read pattern (e.g. FormFeedback) use a MongoDB TTL index (`expires: '30d'` on the Date field) to auto-delete old documents — zero app code needed. Extends the lean-storage philosophy; apply the same pattern to any future collection with similar characteristics (high write volume, no need for indefinite retention).
+- Collections with no long-horizon read pattern (e.g. FormFeedback) use a MongoDB TTL index (`expires: '30d'` on the Date field) to auto-delete old documents — zero app code needed. Extends the lean-storage philosophy; apply the same pattern to any future collection with similar characteristics (high write volume, no need for indefinite retention). Do NOT apply this reflexively to every collection — verify actual write volume and long-term value first (MealLog and Workouts deliberately have no TTL; run the storage math before assuming a pattern transfers).
+
+**External API integration (Milestone 5 — Gemini Vision):**
+- Any external API with a rate limit shared across the whole project (not per-user) needs explicit handling — treat 429s as a real, expected scenario when multiple users share one API key, not an edge case.
+- If a service offers multiple models/tiers with separate quotas, pool them via a fallback chain rather than relying on just one — check the LIVE usage dashboard for actual current limits before assuming documentation or blog posts are accurate.
+- Never reuse a working pattern (e.g. a page-reload-on-success callback) in a new component without re-checking whether the original reasoning still applies — the same code can be correct in one place and a bug in another.
+
+**Deployment (Milestone 5 — Render + Vercel):**
+- Any SPA using client-side routing (React Router) needs an explicit rewrite rule on the static host (`vercel.json`: rewrite all paths to `/index.html`) or page refresh on nested routes 404s. Near-universal requirement, not an edge case.
+- CORS origin matching is exact-match on the `Origin` header — no trailing slash, http vs https must match precisely between the env var and the real deployed URL.
+- Vite env vars exposed to client code must be prefixed `VITE_`, and are baked in at BUILD time — changing one after a deploy requires a fresh build, not just a restart.
+- Match backend hosting region to the DATABASE's region, not just user proximity — the backend-to-database round trip happens on every request.
