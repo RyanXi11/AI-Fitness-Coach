@@ -1,21 +1,41 @@
-[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![MediaPipe](https://img.shields.io/badge/MediaPipe-0097A7?style=for-the-badge&logo=mediapipe&logoColor=white)](https://developers.google.com/mediapipe)
-[![Google Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://ai.google.dev/)
-[![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com/)
-[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+<!-- Badges -->
+<p align="center">
+  <a href="https://www.mongodb.com/"><img src="https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" /></a>
+  <a href="https://expressjs.com/"><img src="https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express" /></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" /></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" /></a>
+  <a href="https://developers.google.com/mediapipe"><img src="https://img.shields.io/badge/MediaPipe-0097A7?style=for-the-badge&logo=mediapipe&logoColor=white" alt="MediaPipe" /></a>
+</p>
 
-[![Live Demo](https://img.shields.io/badge/-%F0%9F%9A%80%20Try%20It%20Now!-brightgreen?style=for-the-badge)](https://ai-fitness-coach-plum.vercel.app)
+<p align="center">
+  <a href="https://ai.google.dev/"><img src="https://img.shields.io/badge/Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white" alt="Google Gemini" /></a>
+  <a href="https://render.com/"><img src="https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Render" /></a>
+  <a href="https://vercel.com/"><img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" /></a>
+</p>
 
 ---
 
-# 🏋️ AI Fitness Coach
+<h1 align="center">🏋️ AI Fitness Coach</h1>
 
-**Train smarter. Lift heavier. Never lose your form.**
+<p align="center">
+  <strong>Train smarter. Lift heavier. Never lose your form.</strong>
+</p>
 
-A full-stack fitness coach that logs your workouts, tells you exactly when to add weight using a real progressive-overload model, watches your squat form through your webcam in real time, and estimates calories from a photo of your meal. Built for myself and a handful of close friends who actually train — not a demo.
+<p align="center">
+  A full-stack fitness coach that logs your workouts, tells you exactly when to add weight using a real progressive-overload model, watches your squat form through your webcam in real time, and estimates calories from a photo of your meal. Built for myself and a handful of close friends who actually train — not a demo.
+</p>
+
+<p align="center">
+  <a href="https://ai-fitness-coach-plum.vercel.app"><img src="https://img.shields.io/badge/-%F0%9F%9A%80%20Try%20It%20Now!-brightgreen?style=for-the-badge" alt="Try It Now" /></a>
+</p>
+
+<p align="center">
+  <em>Free-tier hosting — the backend may take up to a minute to wake up on first load. Create a free account to explore the dashboard, progression logic, and squat tracker firsthand.</em>
+</p>
+
+<p align="center">
+  <img src="docs/demo.gif" alt="Squat form check demo" width="600" />
+</p>
 
 ---
 
@@ -55,11 +75,7 @@ AI Fitness Coach solves both. Log a workout with a target rep range and RIR (Rep
 - **Surviving a shared API rate limit.** Meal photo analysis hit a 429 from Gemini during testing. The error's short retry hint suggested a brief per-minute limit — but retrying still failed. Checking the live usage dashboard revealed both a per-minute *and* a per-day quota were exhausted. Since each Gemini model tracks its quota independently, the fix pools seven models into one fallback chain, turning a 20-request daily ceiling into roughly 1,080.
 - **A React crash from a timing assumption.** Calling the pose-detection model before the video had real frame data threw an error inside a `useEffect` — and with no error boundary in the app, React's response was to unmount the entire component tree, not just the camera widget. Fixed with a readiness check and defensive error handling around every detection call.
 
----
-
-## Demo
-
-![Squat form check demo](docs/demo.gif)
+See [`docs/decisions.md`](docs/decisions.md) for the full running log of every design decision and bug found during development.
 
 ---
 
@@ -183,6 +199,12 @@ AI-Fitness-Coach/
 
 ---
 
+## Contact
+
+- **Ryan Xi** — [LinkedIn](https://www.linkedin.com/in/ryan-xi)
+
+---
+
 ## Future Roadmap
 
 ### Features
@@ -199,4 +221,6 @@ AI-Fitness-Coach/
 
 ---
 
-*Built by someone who actually uses it, five days a week.*
+<p align="center">
+  <em>Built by someone who actually uses it, five days a week.</em>
+</p>
