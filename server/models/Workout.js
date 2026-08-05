@@ -7,18 +7,26 @@ const mongoose = require('mongoose');
 const setSchema = new mongoose.Schema({
   reps: { type: Number, required: true },
   weight: { type: Number, required: true },
-  unit: { type: String, enum: ['lb', 'kg'], default: 'lb' }
+  unit: { type: String, enum: ['lb', 'kg'], default: 'lb' },
+  isWarmup: { type: Boolean, default: false }, // warmup sets are logged but never evaluated for progression
+  rir: { type: Number, min: 0, max: 5 } // Reps In Reserve — meaningful for working sets, not warmups
 }, { _id: false });
 
 const workoutSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   exercise: { type: String, required: true, trim: true },
   sets: [setSchema],
+  // The target rep range for THIS session's working sets (e.g. 8-12).
+  // Stored per log entry rather than as a separate per-exercise setting
+  // — simpler schema, and naturally supports shifting rep ranges across
+  // training phases without a settings system.
+  minTargetReps: { type: Number },
+  maxTargetReps: { type: Number },
   date: { type: Date, required: true, default: Date.now },
   notes: { type: String, trim: true }
 }, { timestamps: true });
 
-// Matches the exact query the progression algorithm needs in Milestone 2:
+// Matches the exact query the progression algorithm needs:
 // "this user's history on this exercise, sorted by date"
 workoutSchema.index({ userId: 1, exercise: 1, date: -1 });
 

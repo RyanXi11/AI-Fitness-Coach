@@ -206,7 +206,7 @@ a:focus-visible {
   padding: 3px 0;
 }
 
-.dashboard>a {
+.dashboard > a {
   color: var(--brass);
   font-family: var(--font-body);
   font-weight: 600;
@@ -214,7 +214,7 @@ a:focus-visible {
   text-decoration: none;
 }
 
-.dashboard>a:hover {
+.dashboard > a:hover {
   text-decoration: underline;
 }
 
@@ -301,7 +301,7 @@ a:focus-visible {
   color: var(--brass);
 }
 
-.workout-form>button[type="submit"] {
+.workout-form > button[type="submit"] {
   background: var(--brass);
   border: none;
   border-radius: 4px;
@@ -313,7 +313,7 @@ a:focus-visible {
   cursor: pointer;
 }
 
-.workout-form>button[type="submit"]:hover {
+.workout-form > button[type="submit"]:hover {
   background: #e2a13a;
 }
 
@@ -375,6 +375,97 @@ a:focus-visible {
   font-size: 13px;
   color: var(--miss-red);
   margin-top: 8px;
+}
+
+.progression-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--slate-700);
+}
+
+.progression-item:last-child {
+  border-bottom: none;
+}
+
+.progression-item strong {
+  font-family: var(--font-body);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--chalk-dim);
+}
+
+.progression-item p {
+  margin: 4px 0 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+/* Action-needed items (increase/decrease) get the brass accent,
+   matching the same visual language as the stat cards elsewhere */
+.progression-item.increase_weight strong,
+.progression-item.decrease_weight strong {
+  color: var(--brass);
+}
+
+.day-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.day-tab {
+  background: transparent;
+  border: 1px solid var(--slate-600);
+  border-radius: 4px;
+  padding: 6px 14px;
+  color: var(--chalk-dim);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.day-tab.active {
+  background: var(--brass);
+  border-color: var(--brass);
+  color: var(--slate-950);
+  font-weight: 600;
+}
+
+.routine-day-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--slate-700);
+}
+
+.routine-day-item:last-child {
+  border-bottom: none;
+}
+
+.routine-day-item strong {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.routine-day-item p {
+  margin: 4px 0 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--chalk-dim);
+}
+
+.delete-day {
+  background: transparent;
+  border: 1px solid var(--miss-red);
+  color: var(--miss-red);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* ---------- Meal photo upload ---------- */

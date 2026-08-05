@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const workoutRoutes = require('./routes/workouts');
 const mealLogRoutes = require('./routes/mealLogs');
 const formFeedbackRoutes = require('./routes/formFeedback');
+const routineDayRoutes = require('./routes/routineDays');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/mealLogs', mealLogRoutes);
 app.use('/api/formFeedback', formFeedbackRoutes);
+app.use('/api/routineDays', routineDayRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

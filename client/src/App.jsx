@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import WorkoutSession from './pages/WorkoutSession';
+import RoutineSettings from './pages/RoutineSettings';
 
 export default function App() {
   return (
@@ -29,6 +30,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <WorkoutSession />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/routine"
+            element={
+              <ProtectedRoute>
+                <RoutineSettings />
               </ProtectedRoute>
             }
           />

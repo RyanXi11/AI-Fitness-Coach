@@ -11,15 +11,17 @@ router.use(auth); // every route below requires a valid JWT
 // CREATE — log a new workout
 router.post('/', async (req, res) => {
   try {
-    const { exercise, sets, date, notes } = req.body;
+    const { exercise, sets, date, notes, minTargetReps, maxTargetReps } = req.body;
     if (!exercise || !sets || !sets.length) {
       return res.status(400).json({ error: 'exercise and at least one set are required' });
     }
 
     const workout = await Workout.create({
-      userId: req.user.id, // pulled from the verified token, never trusted from the request body
+      userId: req.user.id,
       exercise,
-      sets,
+      sets, // each set can now include isWarmup and rir — no server change needed, Mongoose accepts them since they're valid schema fields
+      minTargetReps,
+      maxTargetReps,
       date: date || Date.now(),
       notes
     });
