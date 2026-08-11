@@ -3,24 +3,19 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 
 export default function MealPhotoUpload() {
+  const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
-  // Object URLs created by createObjectURL live in browser memory until
-  // explicitly revoked. Lower stakes than the Milestone 4 camera stream
-  // (one photo, not a continuous feed), but still worth cleaning up
-  // correctly — revoke the previous preview whenever a new one is set,
-  // and on unmount.
   useEffect(() => {
     return () => {
       if (preview) URL.revokeObjectURL(preview);
     };
   }, [preview]);
 
-  // Converts a File into a base64 string with no "data:image/..." prefix
-  // — matches the { image, mimeType } shape the backend route expects
   function fileToBase64(fileOrBlob) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -30,12 +25,6 @@ export default function MealPhotoUpload() {
     });
   }
 
-  // Downscales the image before upload. A modern phone photo is often
-  // much higher resolution than a vision model needs to identify food
-  // and estimate portion size — sending it at full size just adds
-  // network transfer time and likely model processing time for no real
-  // benefit. Capping the longest side at 1024px keeps plenty of detail
-  // for this task while meaningfully shrinking the payload.
   function resizeImage(file, maxDimension = 1024, quality = 0.8) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -44,9 +33,6 @@ export default function MealPhotoUpload() {
       reader.onload = (e) => {
         img.onload = () => {
           let { width, height } = img;
-
-          // Only scale DOWN — never upscale a smaller image, since that
-          // wouldn't speed anything up and could reduce quality
           if (width > height && width > maxDimension) {
             height = Math.round((height * maxDimension) / width);
             width = maxDimension;
@@ -54,7 +40,6 @@ export default function MealPhotoUpload() {
             width = Math.round((width * maxDimension) / height);
             height = maxDimension;
           }
-
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
@@ -69,25 +54,34 @@ export default function MealPhotoUpload() {
     });
   }
 
-  async function handleFileChange(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+  // Selecting a photo now only shows a preview — it no longer triggers
+  // analysis immediately, since the user should get a chance to add an
+  // optional description before the request goes out.
+  function handleFileChange(e) {
+    const selected = e.target.files[0];
+    if (!selected) return;
 
     setError('');
     setResult(null);
-    setPreview(URL.createObjectURL(file)); // local-only preview, never touches the server
+    setFile(selected);
+    setPreview(URL.createObjectURL(selected));
+  }
+
+  async function handleSubmit() {
+    if (!file) return;
+
+    setError('');
     setLoading(true);
 
     try {
       const resizedBlob = await resizeImage(file);
       const base64 = await fileToBase64(resizedBlob);
-      // canvas.toBlob always outputs 'image/jpeg' here, regardless of
-      // the original file's format, since resizeImage re-encodes it
-      const res = await api.post('/mealLogs', { image: base64, mimeType: 'image/jpeg' });
+      const res = await api.post('/mealLogs', {
+        image: base64,
+        mimeType: 'image/jpeg',
+        description: description.trim() || undefined
+      });
       setResult(res.data);
-      // No page reload here — unlike WorkoutForm, this component's whole
-      // purpose is showing the result on screen. Nothing on the dashboard
-      // currently depends on meal log data, so there's nothing to refresh.
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to analyze photo');
     } finally {
@@ -104,7 +98,7 @@ export default function MealPhotoUpload() {
         <input
           type="file"
           accept="image/*"
-          capture="environment" // hints mobile browsers to open the rear camera directly, not just a gallery picker
+          capture="environment"
           onChange={handleFileChange}
           hidden
         />
@@ -112,13 +106,31 @@ export default function MealPhotoUpload() {
 
       {preview && <img src={preview} alt="Meal preview" className="meal-preview" />}
 
-      {loading && <p>Analyzing photo...</p>}
+      {preview && !result && (
+        <>
+          <textarea
+            placeholder="Add context, e.g. 'extra dressing, double portion' (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="meal-description-input"
+          />
+          <button onClick={handleSubmit} disabled={loading} className="analyze-button">
+            {loading ? 'Analyzing...' : 'Log meal'}
+          </button>
+        </>
+      )}
+
       {error && <p className="error">{error}</p>}
 
       {result && (
         <div className="meal-result">
           <p className="food-description">{result.foodDescription}</p>
           <p className="calorie-estimate">{result.estimatedCalories} calories</p>
+          <div className="macro-row">
+            <span>{result.protein}g protein</span>
+            <span>{result.carbs}g carbs</span>
+            <span>{result.fat}g fat</span>
+          </div>
         </div>
       )}
     </div>

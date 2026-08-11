@@ -531,3 +531,50 @@ a:focus-visible {
   color: var(--chalk);
   margin: 0;
 }
+
+.meal-description-input {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  background: var(--slate-800);
+  border: 1px solid var(--slate-600);
+  border-radius: 4px;
+  padding: 10px 12px;
+  color: var(--chalk);
+  font-family: var(--font-body);
+  font-size: 13px;
+  min-height: 50px;
+  resize: vertical;
+}
+
+.meal-description-input::placeholder {
+  color: var(--chalk-dim);
+}
+
+.analyze-button {
+  margin-top: 10px;
+  background: var(--brass);
+  border: none;
+  border-radius: 4px;
+  padding: 10px 18px;
+  color: var(--slate-950);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.analyze-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.macro-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--chalk-dim);
+}

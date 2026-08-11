@@ -17,9 +17,12 @@ const nutritionSchema = {
   type: 'object',
   properties: {
     foodDescription: { type: 'string' },
-    estimatedCalories: { type: 'number' }
+    estimatedCalories: { type: 'number' },
+    protein: { type: 'number' }, // grams
+    carbs: { type: 'number' }, // grams
+    fat: { type: 'number' } // grams
   },
-  required: ['foodDescription', 'estimatedCalories']
+  required: ['foodDescription', 'estimatedCalories', 'protein', 'carbs', 'fat']
 };
 
 // Each model has its OWN separate free-tier quota — trying multiple
@@ -42,18 +45,23 @@ const MODEL_FALLBACK_ORDER = [
   'gemini-3.5-flash'         // 20 RPD, already exhausted for today
 ];
 
-async function analyzeMealPhoto(image, mimeType) {
+async function analyzeMealPhoto(image, mimeType, description) {
   let lastError;
+
+  // The photo alone can't communicate things like "extra dressing" or
+  // "double portion" — an optional user description gives Gemini real
+  // additional context to improve the estimate, not just a label.
+  const basePrompt = 'Identify the food in this photo and estimate its total calories, protein, carbohydrates, and fat in grams. Be realistic about portion size.';
+  const promptText = description
+    ? `${basePrompt} Additional context from the user: "${description}"`
+    : basePrompt;
 
   for (const model of MODEL_FALLBACK_ORDER) {
     try {
       const interaction = await client.interactions.create({
         model,
         input: [
-          {
-            type: 'text',
-            text: 'Identify the food in this photo and estimate its total calorie count. Be realistic about portion size.'
-          },
+          { type: 'text', text: promptText },
           { type: 'image', data: image, mime_type: mimeType }
         ],
         response_format: {
@@ -77,19 +85,23 @@ async function analyzeMealPhoto(image, mimeType) {
 
 router.post('/', async (req, res) => {
   try {
-    const { image, mimeType } = req.body; // image = base64 string, never written to disk
+    const { image, mimeType, description } = req.body; // image = base64 string, never written to disk
 
     if (!image || !mimeType) {
       return res.status(400).json({ error: 'image and mimeType are required' });
     }
 
-    const result = await analyzeMealPhoto(image, mimeType);
+    const result = await analyzeMealPhoto(image, mimeType, description);
     console.log(`Meal photo analyzed using model: ${result.modelUsed}`);
 
     const mealLog = await MealLog.create({
       userId: req.user.id,
       foodDescription: result.foodDescription,
-      estimatedCalories: result.estimatedCalories
+      estimatedCalories: result.estimatedCalories,
+      protein: result.protein,
+      carbs: result.carbs,
+      fat: result.fat,
+      userNote: description || undefined
     });
 
     res.status(201).json(mealLog);
