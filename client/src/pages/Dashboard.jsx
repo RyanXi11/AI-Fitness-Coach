@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import WorkoutForm from '../components/WorkoutForm';
-import MealPhotoUpload from '../components/MealPhotoUpload';
+import MealLogger from '../components/MealLogger';
 
 // Fallback used only when the user hasn't defined any routine days yet —
 // same "last 14 days, whatever was actually logged" heuristic from
@@ -158,7 +158,7 @@ export default function Dashboard() {
         ))}
       </section>
 
-      <MealPhotoUpload />
+      <MealLogger />
 
       <WorkoutForm onLogged={() => window.location.reload()} />
     </div>

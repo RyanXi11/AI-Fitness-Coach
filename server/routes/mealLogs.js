@@ -124,4 +124,66 @@ router.get('/', async (req, res) => {
   res.json(mealLogs);
 });
 
+// Looks up a scanned barcode against Open Food Facts and returns the
+// product's per-100g nutrition. Does NOT save anything yet — the user
+// still needs to confirm how much they actually ate.
+router.get('/lookup-barcode/:code', async (req, res) => {
+  try {
+    const response = await fetch(
+      `https://world.openfoodfacts.org/api/v2/product/${req.params.code}.json`,
+      { headers: { 'User-Agent': 'AI-Fitness-Coach/1.0 (personal project)' } }
+    );
+    const data = await response.json();
+
+    // Open Food Facts returns HTTP 200 even for a barcode that doesn't
+    // exist — the real success indicator is `status` in the body, not
+    // the HTTP status code. Trusting a 200 alone would silently treat
+    // "not found" as a valid, empty result.
+    if (data.status !== 1) {
+      return res.status(404).json({ error: 'No product found for this barcode' });
+    }
+
+    const { product_name, brands, nutriments = {} } = data.product;
+    res.json({
+      foodDescription: brands ? `${brands} — ${product_name}` : product_name,
+      caloriesPer100g: nutriments['energy-kcal_100g'] ?? 0,
+      proteinPer100g: nutriments['proteins_100g'] ?? 0,
+      carbsPer100g: nutriments['carbohydrates_100g'] ?? 0,
+      fatPer100g: nutriments['fat_100g'] ?? 0
+    });
+  } catch (err) {
+    console.error('Barcode lookup failed:', err);
+    res.status(500).json({ error: 'Failed to look up barcode' });
+  }
+});
+
+// Confirms a barcode-scanned product and saves it — scales the looked-up
+// per-100g values by the actual amount eaten, then converges on the same
+// MealLog schema the photo pipeline uses, so both paths produce identical
+// downstream data.
+router.post('/barcode', async (req, res) => {
+  try {
+    const { foodDescription, caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g, gramsEaten } = req.body;
+
+    if (!foodDescription || gramsEaten == null) {
+      return res.status(400).json({ error: 'foodDescription and gramsEaten are required' });
+    }
+
+    const scale = gramsEaten / 100;
+    const mealLog = await MealLog.create({
+      userId: req.user.id,
+      foodDescription,
+      estimatedCalories: Math.round(caloriesPer100g * scale),
+      protein: Math.round(proteinPer100g * scale * 10) / 10,
+      carbs: Math.round(carbsPer100g * scale * 10) / 10,
+      fat: Math.round(fatPer100g * scale * 10) / 10
+    });
+
+    res.status(201).json(mealLog);
+  } catch (err) {
+    console.error('Failed to save barcode meal log:', err);
+    res.status(500).json({ error: 'Failed to log meal' });
+  }
+});
+
 module.exports = router;
