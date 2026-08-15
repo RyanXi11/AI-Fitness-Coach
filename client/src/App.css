@@ -126,58 +126,138 @@ a:focus-visible {
   margin: 0;
 }
 
-/* ---------- Dashboard ---------- */
+/* ---------- App shell (top bar + tab navigation) ---------- */
 
-.dashboard {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 40px 24px 80px;
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.dashboard-header {
+/* Source order is topbar / nav / main, but on desktop the tab row reads
+   better directly under the title, and on mobile it's pinned to the bottom
+   for thumb reach. `order` lets one DOM structure serve both. */
+.app-topbar {
+  order: 0;
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px 16px;
-  margin-bottom: 32px;
+  gap: 12px;
+  padding: 14px 24px;
+  background: rgba(20, 23, 28, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--slate-700);
 }
 
-.dashboard-header a {
-  color: var(--brass);
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 14px;
-  text-decoration: none;
-}
-
-.dashboard-header a:hover {
-  text-decoration: underline;
-}
-
-.dashboard-header h1 {
+.app-title {
   font-family: var(--font-display);
-  font-size: 24px;
-  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  color: var(--chalk);
 }
 
-.dashboard-header button {
+.logout-button {
   background: transparent;
   border: 1px solid var(--slate-600);
   color: var(--chalk-dim);
   border-radius: 4px;
-  padding: 8px 14px;
+  padding: 7px 13px;
   font-family: var(--font-body);
   font-size: 13px;
   cursor: pointer;
 }
 
-.dashboard-header button:hover {
+.logout-button:hover {
   border-color: var(--chalk-dim);
   color: var(--chalk);
 }
 
-.dashboard section {
+.tab-bar {
+  order: 1;
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 10px 20px 0;
+  border-bottom: 1px solid var(--slate-700);
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  color: var(--chalk-dim);
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-item:hover {
+  color: var(--chalk);
+}
+
+.tab-item.active {
+  color: var(--brass);
+  border-bottom-color: var(--brass);
+}
+
+.tab-item svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.app-main {
+  order: 2;
+  flex: 1;
+}
+
+/* ---------- Page container ---------- */
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--slate-900);
+  border: 1px solid var(--slate-700);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-top: 16px;
+  max-width: 480px;
+}
+
+.action-card strong {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--chalk);
+}
+
+.action-card p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--chalk-dim);
+}
+
+.action-card .secondary-button {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.page section {
   /* The signature element: a thick brass rim on the left, like a stamped
      weight plate — every stat block reads as "a plate on the rack" */
   background: var(--slate-900);
@@ -188,7 +268,7 @@ a:focus-visible {
   margin-bottom: 16px;
 }
 
-.dashboard section h2 {
+.page section h2 {
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 12px;
@@ -198,7 +278,10 @@ a:focus-visible {
   margin: 0 0 10px;
 }
 
-.dashboard section p {
+/* The big number only. This used to be `section p`, which outranked
+   `.progression-item p` on specificity and rendered every message and
+   empty state at 22px mono as well. */
+.stat-value {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-size: 22px;
@@ -207,7 +290,15 @@ a:focus-visible {
   color: var(--chalk);
 }
 
-.dashboard section ul {
+.page section > p {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--chalk-dim);
+  margin: 0;
+}
+
+.page section ul {
   list-style: none;
   padding: 0;
   margin: 12px 0 0;
@@ -216,19 +307,18 @@ a:focus-visible {
   color: var(--chalk-dim);
 }
 
-.dashboard section li {
+.page section li {
   padding: 3px 0;
 }
 
-.dashboard > a {
+.page a {
   color: var(--brass);
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 14px;
   text-decoration: none;
 }
 
-.dashboard > a:hover {
+.page a:hover {
   text-decoration: underline;
 }
 
@@ -711,13 +801,54 @@ a:focus-visible {
    iOS from zooming the page on focus (Safari does that for any input
    whose computed font-size is under 16px). */
 @media (max-width: 600px) {
-  .dashboard {
-    padding: 24px 16px calc(48px + env(safe-area-inset-bottom));
+  .page {
+    padding: 20px 16px 24px;
   }
 
-  .dashboard-header h1 {
-    flex: 1 0 100%;
-    font-size: 22px;
+  .app-topbar {
+    padding: 12px 16px;
+  }
+
+  /* Pinned to the bottom on phones: thumb reach, and it matches the tab-bar
+     convention of the native apps this is modeled on. */
+  .tab-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    max-width: none;
+    margin: 0;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    gap: 0;
+    background: var(--slate-900);
+    border-top: 1px solid var(--slate-700);
+    border-bottom: none;
+  }
+
+  .tab-item {
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 4px;
+    border-radius: 6px;
+    border-bottom: none;
+    font-size: 11px;
+  }
+
+  .tab-item.active {
+    background: rgba(212, 149, 43, 0.12);
+    border-bottom: none;
+  }
+
+  .tab-item svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  /* Clear the fixed bar so the last card isn't trapped underneath it. */
+  .app-main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 
   .auth-form input,
@@ -747,8 +878,7 @@ a:focus-visible {
 
   .edit-day,
   .delete-day,
-  .day-tab,
-  .dashboard-header button {
+  .day-tab {
     padding: 10px 14px;
     font-size: 14px;
   }

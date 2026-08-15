@@ -1,6 +1,5 @@
 // src/pages/RoutineSettings.jsx
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
 export default function RoutineSettings() {
@@ -97,12 +96,7 @@ export default function RoutineSettings() {
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1>Your Routine</h1>
-        <Link to="/dashboard">Back to dashboard</Link>
-      </div>
-
+    <div className="page">
       <form ref={formRef} onSubmit={handleSubmit} className="workout-form">
         <h2>{editingId ? 'Edit day' : 'Add a day'}</h2>
         {error && <p className="error">{error}</p>}

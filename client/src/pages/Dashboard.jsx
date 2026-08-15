@@ -2,9 +2,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { useAuth } from '../context/AuthContext';
-import WorkoutForm from '../components/WorkoutForm';
-import MealLogger from '../components/MealLogger';
 
 // Fallback used only when the user hasn't defined any routine days yet —
 // same "last 14 days, whatever was actually logged" heuristic from
@@ -35,7 +32,6 @@ function sortByActionNeeded(results) {
 }
 
 export default function Dashboard() {
-  const { logout } = useAuth();
   const [stats, setStats] = useState(null);
   const [routineDays, setRoutineDays] = useState([]);
   const [selectedDayId, setSelectedDayId] = useState(null);
@@ -101,17 +97,10 @@ export default function Dashboard() {
   if (loading) return <p>Loading dashboard...</p>;
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1>Dashboard</h1>
-        <Link to="/routine">Manage routine</Link>
-        <Link to="/session">Start form-check session</Link>
-        <button onClick={logout}>Log out</button>
-      </div>
-
+    <div className="page">
       <section>
         <h2>This week</h2>
-        <p>{stats?.workoutsThisWeek ?? 0} workouts logged</p>
+        <p className="stat-value">{stats?.workoutsThisWeek ?? 0} workouts logged</p>
         {stats?.favoriteExercises?.length > 0 && (
           <ul>
             {stats.favoriteExercises.map((ex) => (
@@ -157,10 +146,6 @@ export default function Dashboard() {
           </div>
         ))}
       </section>
-
-      <MealLogger />
-
-      <WorkoutForm onLogged={() => window.location.reload()} />
     </div>
   );
 }
