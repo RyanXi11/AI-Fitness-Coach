@@ -17,6 +17,12 @@ const RETAIL_BARCODE_FORMATS = [
 ];
 
 export default function BarcodeScanner() {
+  // Opt-in debugging aid, not a user-facing feature. Deliberately NOT gated on
+  // import.meta.env.DEV: camera behavior can only be tested on a real phone,
+  // which requires HTTPS and therefore the production build — a dev-only gate
+  // would hide this in the exact environment it exists to diagnose.
+  const showDiagnostics = new URLSearchParams(window.location.search).has('debug');
+
   const videoRef = useRef(null);
   // Holds the IScannerControls handle returned by decodeFromConstraints, so
   // cleanup can reliably stop it — same lesson as Milestone 4's camera stream
@@ -26,7 +32,8 @@ export default function BarcodeScanner() {
   const handledRef = useRef(false); // the decode loop keeps running for a beat after a hit; ignore repeat callbacks for the same scan
   const statsRef = useRef({ attempts: 0, lastError: '' }); // counted in a ref, not state — the loop fires ~10x/sec and re-rendering that often would be wasteful
   const diagTimerRef = useRef(null);
-  const [status, setStatus] = useState('idle'); // idle | scanning | denied | error
+  const cancelledRef = useRef(false);
+  const [status, setStatus] = useState('idle'); // idle | scanning | found | denied | error
   const [product, setProduct] = useState(null);
   const [gramsEaten, setGramsEaten] = useState(100);
   const [error, setError] = useState('');
@@ -39,6 +46,7 @@ export default function BarcodeScanner() {
     setProduct(null);
     setResult(null);
     handledRef.current = false;
+    cancelledRef.current = false;
     statsRef.current = { attempts: 0, lastError: '' };
 
     try {
@@ -92,17 +100,38 @@ export default function BarcodeScanner() {
       );
       controlsRef.current = controls;
 
+      // Cancel is clickable the moment status flips to 'scanning', but there's
+      // nothing to stop until getUserMedia resolves — which can take seconds
+      // behind a permission prompt. Honor a cancel that landed in that window,
+      // otherwise the camera stays live with no UI attached to it.
+      if (cancelledRef.current) {
+        controls.stop();
+        return;
+      }
+
       // There's no devtools console on a phone, so surface the decoder's
       // progress on screen instead: a climbing attempt count means the loop is
       // alive and the camera simply isn't producing a readable frame, while a
       // frozen count means the loop itself died.
-      const settings = videoRef.current?.srcObject?.getVideoTracks?.()[0]?.getSettings?.() ?? {};
-      diagTimerRef.current = setInterval(() => {
-        setDiag({ width: settings.width, height: settings.height, ...statsRef.current });
-      }, 500);
+      if (showDiagnostics) {
+        const settings = videoRef.current?.srcObject?.getVideoTracks?.()[0]?.getSettings?.() ?? {};
+        diagTimerRef.current = setInterval(() => {
+          setDiag({ width: settings.width, height: settings.height, ...statsRef.current });
+        }, 500);
+      }
     } catch (err) {
       setStatus(err.name === 'NotAllowedError' ? 'denied' : 'error');
     }
+  }
+
+  // Releases the camera without unmounting — leaving the component was
+  // previously the only way to stop an in-progress scan.
+  function cancelScanning() {
+    cancelledRef.current = true;
+    controlsRef.current?.stop();
+    clearInterval(diagTimerRef.current);
+    setDiag(null);
+    setStatus('idle');
   }
 
   async function lookupProduct(barcode) {
@@ -144,8 +173,13 @@ export default function BarcodeScanner() {
 
   return (
     <div className="barcode-scanner">
-      {status === 'idle' && !product && !result && (
-        <button onClick={startScanning} className="analyze-button">Scan a barcode</button>
+      {/* Deliberately not conditioned on `!result` — the previous scan's result
+          stays on screen as a receipt, and hiding this button while it was
+          visible left the user with no way to start another scan. */}
+      {status === 'idle' && !product && (
+        <button onClick={startScanning} className="analyze-button">
+          {result ? 'Scan another barcode' : 'Scan a barcode'}
+        </button>
       )}
 
       {status === 'denied' && (
@@ -168,12 +202,20 @@ export default function BarcodeScanner() {
         style={{ display: status === 'scanning' ? 'block' : 'none', width: '100%', borderRadius: '4px' }}
       />
 
-      {status === 'scanning' && diag && (
+      {showDiagnostics && status === 'scanning' && diag && (
         <p className="scan-diagnostics">
           {diag.width}x{diag.height} · {diag.attempts} attempts
           {diag.lastError && ` · ${diag.lastError}`}
         </p>
       )}
+
+      {status === 'scanning' && (
+        <button onClick={cancelScanning} className="secondary-button">Cancel</button>
+      )}
+
+      {/* The barcode is decoded before the Open Food Facts lookup returns, so
+          there's a real gap here with nothing else on screen to explain it. */}
+      {status === 'found' && !product && <p>Looking up product…</p>}
 
       {product && (
         <div className="meal-result">
@@ -188,6 +230,9 @@ export default function BarcodeScanner() {
             />
           </label>
           <button onClick={handleConfirm} className="analyze-button">Log this</button>
+          {/* Escape hatch for a mis-scan — otherwise the only way out of a
+              wrong product is logging it or leaving the tab. */}
+          <button onClick={startScanning} className="secondary-button">Scan a different item</button>
         </div>
       )}
 

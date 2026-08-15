@@ -1,5 +1,5 @@
 // src/pages/RoutineSettings.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
@@ -7,8 +7,10 @@ export default function RoutineSettings() {
   const [days, setDays] = useState([]);
   const [dayName, setDayName] = useState('');
   const [exercises, setExercises] = useState(['']);
+  const [editingId, setEditingId] = useState(null); // null = the form is creating; an id = editing that day in place
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const formRef = useRef(null);
 
   useEffect(() => {
     loadDays();
@@ -37,6 +39,26 @@ export default function RoutineSettings() {
     setExercises(exercises.filter((_, i) => i !== index));
   }
 
+  function resetForm() {
+    setEditingId(null);
+    setDayName('');
+    setExercises(['']);
+    setError('');
+  }
+
+  // Loads an existing day back into the same form rather than rendering a
+  // separate inline editor — one form means one validation path and one
+  // submit handler, and the fields are identical either way.
+  function startEditing(day) {
+    setEditingId(day._id);
+    setDayName(day.dayName);
+    setExercises(day.exercises.length ? [...day.exercises] : ['']);
+    setError('');
+    // The form sits above the list, so editing a day further down would
+    // otherwise change a form the user can't see and give no feedback.
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -47,18 +69,27 @@ export default function RoutineSettings() {
         return;
       }
 
-      await api.post('/routineDays', { dayName: dayName.trim(), exercises: cleanedExercises });
-      setDayName('');
-      setExercises(['']);
+      const payload = { dayName: dayName.trim(), exercises: cleanedExercises };
+      // Editing updates the existing document. Deleting and recreating would
+      // be destructive and non-atomic — a failed recreate loses the day, and
+      // the unique (userId, dayName) index rules out creating the replacement
+      // first, forcing exactly that risky ordering.
+      if (editingId) {
+        await api.put(`/routineDays/${editingId}`, payload);
+      } else {
+        await api.post('/routineDays', payload);
+      }
+      resetForm();
       loadDays(); // refresh the list in place — this page has nothing else that would need a full reload
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create routine day');
+      setError(err.response?.data?.error || `Failed to ${editingId ? 'update' : 'create'} routine day`);
     }
   }
 
   async function handleDelete(id) {
     try {
       await api.delete(`/routineDays/${id}`);
+      if (id === editingId) resetForm(); // don't leave the form editing a day that no longer exists
       loadDays();
     } catch (err) {
       console.error('Failed to delete routine day:', err);
@@ -72,8 +103,8 @@ export default function RoutineSettings() {
         <Link to="/dashboard">Back to dashboard</Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="workout-form">
-        <h2>Add a day</h2>
+      <form ref={formRef} onSubmit={handleSubmit} className="workout-form">
+        <h2>{editingId ? 'Edit day' : 'Add a day'}</h2>
         {error && <p className="error">{error}</p>}
         <input
           type="text"
@@ -95,7 +126,10 @@ export default function RoutineSettings() {
           </div>
         ))}
         <button type="button" onClick={addExerciseField} className="add-set">+ Add exercise</button>
-        <button type="submit">Save day</button>
+        <button type="submit">{editingId ? 'Save changes' : 'Save day'}</button>
+        {editingId && (
+          <button type="button" onClick={resetForm} className="add-set">Cancel</button>
+        )}
       </form>
 
       <section>
@@ -103,12 +137,15 @@ export default function RoutineSettings() {
         {loading && <p>Loading...</p>}
         {!loading && days.length === 0 && <p>No routine days set up yet.</p>}
         {days.map((day) => (
-          <div key={day._id} className="routine-day-item">
+          <div key={day._id} className={day._id === editingId ? 'routine-day-item editing' : 'routine-day-item'}>
             <div>
               <strong>{day.dayName}</strong>
               <p>{day.exercises.join(', ')}</p>
             </div>
-            <button onClick={() => handleDelete(day._id)} className="delete-day">Delete</button>
+            <div className="routine-day-actions">
+              <button onClick={() => startEditing(day)} className="edit-day">Edit</button>
+              <button onClick={() => handleDelete(day._id)} className="delete-day">Delete</button>
+            </div>
           </div>
         ))}
       </section>

@@ -46,3 +46,18 @@ Stack: MERN (MongoDB/Mongoose, Express, React, Node) + client-side TensorFlow.js
 - CORS origin matching is exact-match on the `Origin` header — no trailing slash, http vs https must match precisely between the env var and the real deployed URL.
 - Vite env vars exposed to client code must be prefixed `VITE_`, and are baked in at BUILD time — changing one after a deploy requires a fresh build, not just a restart.
 - Match backend hosting region to the DATABASE's region, not just user proximity — the backend-to-database round trip happens on every request.
+
+**Third-party library integration (Milestone 6 — found via the barcode scanner):**
+- Never pass an `async` callback to a third-party library that invokes it inside its own `try/catch`. The rejection escapes that catch, becomes an unhandled promise rejection, and every statement after the throwing line is silently skipped — the library keeps running as if nothing happened. Keep such callbacks synchronous and handle errors inline; fire off async work without awaiting it.
+- Verify a method exists in the INSTALLED version before using it (grep `node_modules`, don't trust tutorials or older docs). `@zxing/browser` v0.2.x removed `reset()` — scans are stopped via the `IScannerControls` object returned by `decodeFromConstraints`.
+- When a library hands controls to BOTH a callback parameter and a returned promise, prefer the callback's copy — ZXing runs its first decode iteration synchronously, before the promise resolves, so a ref assigned from the return value can still be `null`.
+- Per-frame console noise from a scanning/polling library is usually normal operation, not the bug. Confirm what a message actually means before chasing it — the loudest signal is often the least relevant one.
+
+**Camera / secure-context conventions:**
+- `getUserMedia` requires a secure context (HTTPS or `localhost`). Testing camera features on a phone via `vite --host` and a LAN IP CANNOT work — the camera never opens, which looks like a broken feature rather than a transport problem. Test against the deployed HTTPS build or an HTTPS tunnel.
+- Laptop webcams are fixed-focus and low-resolution; a camera feature failing on desktop but working on a phone is expected, not a code bug. Always request resolution explicitly (`width/height: { ideal: 1280/720 }`) — the 640x480 default is too coarse to resolve barcode bars.
+- Barcode decode constants (tuned against real failures): formats restricted to `EAN_13`/`EAN_8`/`UPC_A`/`UPC_E` via `DecodeHintType.POSSIBLE_FORMATS`, `TRY_HARDER` enabled, `delayBetweenScanAttempts: 100` (down from the 500ms default). Leaving formats unrestricted makes ZXing try QR/Aztec/PDF417/Data Matrix every frame, wasting most of the per-frame budget.
+
+**Debug affordances:**
+- Gate developer-only UI behind a `?debug=1` query param, NOT `import.meta.env.DEV`. Anything that depends on device hardware or a secure context can only be exercised in the production build, so a dev-only gate hides the tool in the exact environment it exists to diagnose.
+- Keep high-frequency counters (decode attempts, frame stats) in a ref and flush to state on a timer — never `setState` from a loop running many times per second.

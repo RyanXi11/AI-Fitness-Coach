@@ -456,6 +456,34 @@ a:focus-visible {
   color: var(--chalk-dim);
 }
 
+/* Marks which row the form above is currently editing */
+.routine-day-item.editing {
+  border-left: 2px solid var(--brass);
+  padding-left: 10px;
+}
+
+.routine-day-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.edit-day {
+  background: transparent;
+  border: 1px solid var(--slate-600);
+  color: var(--chalk-dim);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.edit-day:hover {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
 .delete-day {
   background: transparent;
   border: 1px solid var(--miss-red);
@@ -567,6 +595,23 @@ a:focus-visible {
 .analyze-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.secondary-button {
+  margin-top: 8px;
+  background: none;
+  border: 1px solid var(--chalk-dim);
+  border-radius: 4px;
+  padding: 8px 16px;
+  color: var(--chalk-dim);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  color: var(--chalk);
+  border-color: var(--chalk);
 }
 
 .macro-row {

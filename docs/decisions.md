@@ -270,3 +270,39 @@ Refreshing on a nested client-side route (e.g. `/login`) returned Vercel's own 4
 - Variables exposed to Vite's client-side bundle must be prefixed `VITE_` — a deliberate safety boundary preventing accidental leakage of server-only secrets into browser-shipped code.
 - Vite bakes environment variables in at **build time**, not runtime — changing an env var after a deploy already ran requires triggering a fresh build for it to take effect, not just a restart.
 
+---
+
+## Milestone 6 — Barcode scanning (deferred from Milestone 5)
+
+Product barcode → Open Food Facts lookup, using `@zxing/browser` for client-side decoding. A separate pipeline from Gemini Vision's photo estimation: exact manufacturer-published nutrition data rather than a model's estimate, at the cost of only working on packaged food.
+
+### Bug found: barcodes decoded successfully but the app did nothing
+
+Symptom: camera opened, video previewed fine, and pointing it at a barcode produced no reaction at all — while the console filled with `NotFoundException` warnings from ZXing's `MultiFormatReader`.
+
+Two separate things had to be untangled here. The console warnings were a **red herring**: ZXing logs one per frame where nothing decodes, which is what normal scanning looks like, so the most visible signal was also the least relevant one. (Those messages read "non-ReaderException" even for `NotFoundException`, which *is* a `ReaderException` — the library is compiled to ES5, and subclassing built-in `Error` through TypeScript's `__extends` downlevel breaks `instanceof` across its own exception hierarchy. Cosmetic; the retry loop `continue`s either way.)
+
+The real cause was `codeReader.reset()`. That's the v0.1.x API — in `@zxing/browser` v0.2.x the reader has no `reset()` or `stop()` at all, and a scan is ended through the `IScannerControls` object that `decodeFromConstraints` returns. Verified by grepping the installed package: zero occurrences of `reset` in `BrowserCodeReader`.
+
+**Why it was invisible rather than a loud crash** — the interesting half. The decode callback was declared `async`, so the resulting `TypeError` became a rejected promise instead of a synchronous throw. ZXing invokes that callback *inside its own `try/catch`* (`BrowserCodeReader.scan`), so had the callback been synchronous the library would have caught the error and surfaced it. Being `async`, the rejection escaped that catch entirely and landed as an unhandled promise rejection, while the statements after the throwing line — `setStatus('found')` and the product lookup — simply never ran. The scan loop kept spinning happily. A failure that should have been a hard crash on the first successful decode instead looked identical to "the scanner just doesn't work."
+
+Fixed by capturing the returned controls and calling `scanControls.stop()`. Used the `controls` passed as the callback's third argument rather than the awaited return value, because ZXing runs the first decode iteration *synchronously* inside `scan()`, before the `decodeFromConstraints` promise resolves — a ref assigned from the return value would still be `null` for an instant scan. The ref is still kept for unmount cleanup.
+
+### Real-world constraint found: camera features can't be tested over a LAN IP
+
+`getUserMedia` is only available in a secure context — HTTPS or `localhost`. The obvious way to test on a phone (`vite --host`, then browse to `http://192.168.x.x:5173`) therefore can't work: the camera never opens at all, which is easy to misread as the scanner being broken rather than the transport. Camera work has to be tested against the deployed HTTPS build or an HTTPS tunnel. Confirmed by testing on an iPhone against the Vercel deployment, where scanning worked immediately.
+
+### Decode reliability tuning (the actual reason it failed on a laptop)
+
+Once the `reset()` bug was fixed, desktop scanning still struggled while the phone succeeded on the first try. Laptop webcams are fixed-focus and low-resolution; the `ChecksumException`/`FormatException` entries mixed into the console were the tell — ZXing *was* locating bar patterns and failing to resolve them, i.e. an image-quality problem, not a logic one. Three changes, all of which help on any device:
+
+- **Restricted formats** to `EAN_13`, `EAN_8`, `UPC_A`, `UPC_E` via `DecodeHintType.POSSIBLE_FORMATS`. By default ZXing attempts every symbology it knows — QR, Micro QR, Aztec, PDF417, Data Matrix — on every frame, spending most of the per-frame budget on readers that could never match retail packaging. This is also what produced the "No Micro QR finder pattern found" noise.
+- **Requested 1280x720.** At the browser default of 640x480 an EAN-13's narrow bars are only a couple of pixels wide, which is precisely what produces near-miss checksum failures.
+- **`TRY_HARDER` hint, and `delayBetweenScanAttempts` 500ms → 100ms.** The default gives only two decode attempts per second of the user holding steady; ten is a far wider window to land a readable frame.
+
+### Decision: debug affordance gated behind `?debug=1`, not `import.meta.env.DEV`
+
+An on-screen readout (negotiated camera resolution, running decode-attempt count, last exception type) was added to diagnose the phone failure, since there's no devtools console on a phone. It distinguishes the failure modes that otherwise look identical: a climbing attempt count means the loop is alive and the camera isn't producing a readable frame, a frozen count means the loop itself died, and a resolution of 640x480 means the camera refused the requested 720p.
+
+Kept rather than deleted, but gated on a `?debug=1` query parameter. `import.meta.env.DEV` was the obvious choice and is the wrong one here: it's `false` in production builds, which — since camera testing requires HTTPS and therefore the deployed build — would hide the tool in the only environment where it can be used. General lesson: "dev-only" gating assumes local development is where you debug, which isn't true for anything that depends on device hardware or a secure context.
+

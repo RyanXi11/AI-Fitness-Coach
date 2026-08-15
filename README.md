@@ -60,9 +60,10 @@ AI Fitness Coach solves both. Log a workout with a target rep range and RIR (Rep
 ## Key Features
 
 - **Rep-range-based progression** — a from-scratch algorithm modeling real double-progression training: single-session weight increases once you clear the top of your range at low RIR, but a more cautious two-session confirmation before suggesting a deload.
-- **Routine/split builder** — define your own training days and see progression grouped by day, persisting through gaps rather than depending on what you happened to log most recently.
+- **Routine/split builder** — define your own training days and see progression grouped by day, persisting through gaps rather than depending on what you happened to log most recently. Days are fully editable in place, so correcting a split never means deleting and rebuilding it.
 - **Real-time pose-estimation form checking** — squat depth detection running entirely client-side, with dynamic left/right side selection based on which side of your body is actually visible to the camera.
 - **Meal photo calorie estimation** — Gemini Vision analysis with a 7-model fallback chain, pooling multiple free-tier quotas into roughly 1,080 combined daily requests.
+- **Barcode scanning** — client-side decoding via ZXing with an Open Food Facts lookup, giving exact manufacturer-published nutrition for packaged food instead of a model's estimate.
 - **Multi-user auth with true data isolation** — every route filters by the verified JWT, not just the frontend, so one account can never see another's data even if the client were bypassed entirely.
 - **Deployed and live** — real production hosting on Render and Vercel, not just a local demo.
 
@@ -181,7 +182,7 @@ AI-Fitness-Coach/
 │       └── progression.js     # the progression algorithm
 └── client/
     └── src/
-        ├── components/        # CameraFeed, WorkoutForm, MealPhotoUpload
+        ├── components/        # CameraFeed, WorkoutForm, MealLogger, MealPhotoUpload, BarcodeScanner
         ├── pages/              # Dashboard, RoutineSettings, WorkoutSession
         └── context/
             └── AuthContext.jsx
@@ -210,9 +211,7 @@ AI-Fitness-Coach/
 ### Features
 
 - [ ] Friend layer — visibility into friends' workouts and streaks, a simple leaderboard
-- [ ] Barcode scanning for packaged-food nutrition lookup (Open Food Facts)
 - [ ] Push-up form checking, with its own real tuning pass against live data
-- [ ] Editing routine days in place, not just creating and deleting them
 
 ### Things to improve
 
