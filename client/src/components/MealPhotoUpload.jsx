@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 
-export default function MealPhotoUpload() {
+export default function MealPhotoUpload({ onLogged }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [description, setDescription] = useState('');
@@ -82,6 +82,7 @@ export default function MealPhotoUpload() {
         description: description.trim() || undefined
       });
       setResult(res.data);
+      onLogged?.(); // refreshes today's totals; the result above stays on screen
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to analyze photo');
     } finally {

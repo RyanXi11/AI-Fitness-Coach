@@ -6,7 +6,7 @@ import { useState } from 'react';
 import MealPhotoUpload from './MealPhotoUpload';
 import BarcodeScanner from './BarcodeScanner';
 
-export default function MealLogger() {
+export default function MealLogger({ onLogged }) {
   const [mode, setMode] = useState('photo');
 
   return (
@@ -26,7 +26,9 @@ export default function MealLogger() {
         </button>
       </div>
 
-      {mode === 'photo' ? <MealPhotoUpload /> : <BarcodeScanner />}
+      {mode === 'photo'
+        ? <MealPhotoUpload onLogged={onLogged} />
+        : <BarcodeScanner onLogged={onLogged} />}
     </div>
   );
 }

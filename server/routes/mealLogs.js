@@ -124,6 +124,49 @@ router.get('/', async (req, res) => {
   res.json(mealLogs);
 });
 
+// Today's meals plus their running totals. Deliberately uses .find() rather
+// than an aggregation pipeline: the list itself is needed for display, so
+// summing a handful of documents in JS avoids a second round trip for numbers
+// we already have in memory.
+router.get('/summary/today', async (req, res) => {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const startOfTomorrow = new Date(startOfDay);
+    startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
+    const meals = await MealLog.find({
+      userId: req.user.id,
+      date: { $gte: startOfDay, $lt: startOfTomorrow }
+    }).sort({ date: -1, _id: -1 }); // _id breaks ties — two meals logged in the same second would otherwise come back in arbitrary order
+
+    const totals = meals.reduce(
+      (acc, m) => ({
+        calories: acc.calories + m.estimatedCalories,
+        protein: acc.protein + m.protein,
+        carbs: acc.carbs + m.carbs,
+        fat: acc.fat + m.fat
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+
+    // Macros are stored as decimals, so summing them accumulates floating
+    // point noise (57.400000000000006). Round before it reaches the UI.
+    res.json({
+      totals: {
+        calories: Math.round(totals.calories),
+        protein: Math.round(totals.protein * 10) / 10,
+        carbs: Math.round(totals.carbs * 10) / 10,
+        fat: Math.round(totals.fat * 10) / 10
+      },
+      meals
+    });
+  } catch (err) {
+    console.error("Failed to load today's meals:", err);
+    res.status(500).json({ error: "Failed to load today's meals" });
+  }
+});
+
 // Looks up a scanned barcode against Open Food Facts and returns the
 // product's per-100g nutrition. Does NOT save anything yet — the user
 // still needs to confirm how much they actually ate.

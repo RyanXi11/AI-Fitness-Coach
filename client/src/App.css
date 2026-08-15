@@ -14,6 +14,12 @@
   --hit-green: #5ba974;
   --miss-red: #c1554b;
 
+  /* Macro bars need three colors that stay distinguishable against the
+     graphite background without competing with brass as the accent. */
+  --macro-protein: #5ba974;
+  --macro-carbs: #d4952b;
+  --macro-fat: #6f8fb8;
+
   /* Type */
   --font-display: 'Archivo Black', sans-serif;
   --font-body: 'IBM Plex Sans', sans-serif;
@@ -225,6 +231,109 @@ a:focus-visible {
   max-width: 720px;
   margin: 0 auto;
   padding: 28px 24px 80px;
+}
+
+/* ---------- Today's nutrition summary ---------- */
+
+.today-summary {
+  max-width: 480px;
+}
+
+.today-hero {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.today-calories {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--chalk);
+}
+
+.today-calories-unit {
+  font-size: 13px;
+  color: var(--chalk-dim);
+}
+
+.today-empty {
+  margin-top: 6px;
+}
+
+.macro-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.macro-bar-row {
+  display: grid;
+  /* Fixed label and value columns keep the bars left-aligned with each
+     other, so their lengths stay visually comparable. */
+  grid-template-columns: 52px 46px 1fr;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.macro-bar-label {
+  color: var(--chalk-dim);
+}
+
+.macro-bar-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--chalk);
+}
+
+.macro-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--slate-700);
+  overflow: hidden;
+}
+
+.macro-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.macro-bar-fill.protein { background: var(--macro-protein); }
+.macro-bar-fill.carbs { background: var(--macro-carbs); }
+.macro-bar-fill.fat { background: var(--macro-fat); }
+
+.today-meals {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--slate-700);
+}
+
+.today-meal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+.today-meal-name {
+  color: var(--chalk-dim);
+}
+
+.today-meal-calories {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--chalk);
+  flex-shrink: 0;
 }
 
 .action-card {

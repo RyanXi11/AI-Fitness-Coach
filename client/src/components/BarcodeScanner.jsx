@@ -16,7 +16,7 @@ const RETAIL_BARCODE_FORMATS = [
   BarcodeFormat.UPC_E
 ];
 
-export default function BarcodeScanner() {
+export default function BarcodeScanner({ onLogged }) {
   // Opt-in debugging aid, not a user-facing feature. Deliberately NOT gated on
   // import.meta.env.DEV: camera behavior can only be tested on a real phone,
   // which requires HTTPS and therefore the production build — a dev-only gate
@@ -157,6 +157,7 @@ export default function BarcodeScanner() {
       setResult(res.data);
       setProduct(null);
       setStatus('idle');
+      onLogged?.(); // refreshes today's totals; the result above stays on screen
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to log meal');
     }
