@@ -620,3 +620,11 @@ a:focus-visible {
   flex-direction: column;
   gap: 4px;
 }
+
+.scan-diagnostics {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  opacity: 0.6;
+  margin: 0;
+}
