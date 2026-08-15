@@ -616,6 +616,13 @@ a:focus-visible {
   border-bottom: none;
 }
 
+.progression-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .progression-item strong {
   font-family: var(--font-body);
   font-size: 13px;
@@ -630,11 +637,82 @@ a:focus-visible {
   font-size: 14px;
 }
 
-/* Action-needed items (increase/decrease) get the brass accent,
-   matching the same visual language as the stat cards elsewhere */
-.progression-item.increase_weight strong,
-.progression-item.decrease_weight strong {
+/* The verdict at a glance. Colors are carried by a tinted background rather
+   than text alone, so the three states stay distinct when scanning quickly. */
+.status-chip {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.status-chip.increase_weight {
+  background: #5ba97422;
+  border-color: #5ba97455;
+  color: var(--hit-green);
+}
+
+.status-chip.decrease_weight {
+  background: #c1554b22;
+  border-color: #c1554b55;
+  color: var(--miss-red);
+}
+
+.status-chip.keep_current {
+  background: #d4952b1f;
+  border-color: var(--brass-dim);
   color: var(--brass);
+}
+
+.status-chip.no_data {
+  background: var(--slate-800);
+  border-color: var(--slate-600);
+  color: var(--chalk-dim);
+}
+
+/* ---------- Loading skeletons ---------- */
+
+/* Placeholders sized like the content they stand in for, so nothing jumps
+   when the real data arrives. */
+.skeleton {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--slate-800) 25%,
+    var(--slate-700) 37%,
+    var(--slate-800) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-sweep 1.4s ease infinite;
+}
+
+.skeleton + .skeleton {
+  margin-top: 10px;
+}
+
+.skeleton-label { width: 110px; height: 13px; }
+.skeleton-stat  { width: 190px; height: 26px; }
+.skeleton-line  { width: 100%; max-width: 320px; height: 15px; }
+.skeleton-line.short { max-width: 200px; }
+.skeleton-block { width: 100%; max-width: 640px; height: 260px; border-radius: 6px; }
+
+@keyframes skeleton-sweep {
+  from { background-position: 100% 50%; }
+  to { background-position: 0 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: var(--slate-800);
+  }
 }
 
 .day-tabs {

@@ -14,7 +14,9 @@ const MACROS = [
   { key: 'fat', label: 'Fat' }
 ];
 
-export default function TodaySummary({ refreshToken }) {
+// `compact` drops the per-meal list, so Home gets the headline numbers
+// without turning into a second Nutrition screen.
+export default function TodaySummary({ refreshToken, compact = false }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,8 +41,23 @@ export default function TodaySummary({ refreshToken }) {
     return () => { cancelled = true; };
   }, [refreshToken]);
 
-  if (loading) return <section className="today-summary"><h2>Today</h2><p>Loading…</p></section>;
-  if (error) return <section className="today-summary"><h2>Today</h2><p className="error">{error}</p></section>;
+  if (loading) {
+    return (
+      <section className="today-summary">
+        <h2>Today</h2>
+        <span className="skeleton skeleton-stat" />
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="today-summary">
+        <h2>Today</h2>
+        <p className="error">{error}</p>
+      </section>
+    );
+  }
 
   const { totals, meals } = data;
   const macroCalories = MACROS.reduce(
@@ -81,14 +98,16 @@ export default function TodaySummary({ refreshToken }) {
             ))}
           </div>
 
-          <ul className="today-meals">
-            {meals.map((meal) => (
-              <li key={meal._id} className="today-meal">
-                <span className="today-meal-name">{meal.foodDescription}</span>
-                <span className="today-meal-calories">{meal.estimatedCalories}</span>
-              </li>
-            ))}
-          </ul>
+          {!compact && (
+            <ul className="today-meals">
+              {meals.map((meal) => (
+                <li key={meal._id} className="today-meal">
+                  <span className="today-meal-name">{meal.foodDescription}</span>
+                  <span className="today-meal-calories">{meal.estimatedCalories}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
     </section>

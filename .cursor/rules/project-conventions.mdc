@@ -58,6 +58,10 @@ Stack: MERN (MongoDB/Mongoose, Express, React, Node) + client-side TensorFlow.js
 - Laptop webcams are fixed-focus and low-resolution; a camera feature failing on desktop but working on a phone is expected, not a code bug. Always request resolution explicitly (`width/height: { ideal: 1280/720 }`) — the 640x480 default is too coarse to resolve barcode bars.
 - Barcode decode constants (tuned against real failures): formats restricted to `EAN_13`/`EAN_8`/`UPC_A`/`UPC_E` via `DecodeHintType.POSSIBLE_FORMATS`, `TRY_HARDER` enabled, `delayBetweenScanAttempts: 100` (down from the 500ms default). Leaving formats unrestricted makes ZXing try QR/Aztec/PDF417/Data Matrix every frame, wasting most of the per-frame budget.
 
+**Bundle size (Milestone 6):**
+- Route-level `React.lazy` + `Suspense` for any screen carrying a camera/vision dependency. `WorkoutSession` (MediaPipe) and `BarcodeScanner` (ZXing) are both split out; together they were ~68% of the initial bundle and most visits open neither.
+- Read the actual per-chunk build output before deciding what to split. The intuition that MediaPipe was the heaviest dependency was wrong by more than 3x — ZXing ships 482 KB of JS while MediaPipe ships 139 KB, because MediaPipe fetches its WASM and model at runtime rather than bundling them.
+
 **Debug affordances:**
 - Gate developer-only UI behind a `?debug=1` query param, NOT `import.meta.env.DEV`. Anything that depends on device hardware or a secure context can only be exercised in the production build, so a dev-only gate hides the tool in the exact environment it exists to diagnose.
 - Keep high-frequency counters (decode attempts, frame stats) in a ref and flush to state on a timer — never `setState` from a loop running many times per second.

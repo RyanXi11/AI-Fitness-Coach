@@ -2,6 +2,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import TodaySummary from '../components/TodaySummary';
+
+// The raw suggestion keys are readable in JSON but not on screen — a short
+// verdict the user can scan beats making them read the sentence to find it.
+const SUGGESTION_LABELS = {
+  increase_weight: 'Add weight',
+  decrease_weight: 'Deload',
+  keep_current: 'Hold',
+  no_data: 'No data'
+};
 
 // Fallback used only when the user hasn't defined any routine days yet —
 // same "last 14 days, whatever was actually logged" heuristic from
@@ -94,7 +104,23 @@ export default function Dashboard() {
     loadDayProgression();
   }, [selectedDayId, routineDays]);
 
-  if (loading) return <p>Loading dashboard...</p>;
+  // A skeleton in the real layout's shape, rather than a line of text that
+  // collapses the page and then shoves everything down when data lands.
+  if (loading) {
+    return (
+      <div className="page">
+        <section>
+          <span className="skeleton skeleton-label" />
+          <span className="skeleton skeleton-stat" />
+        </section>
+        <section>
+          <span className="skeleton skeleton-label" />
+          <span className="skeleton skeleton-line" />
+          <span className="skeleton skeleton-line short" />
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -109,6 +135,8 @@ export default function Dashboard() {
           </ul>
         )}
       </section>
+
+      <TodaySummary compact />
 
       <section>
         <h2>Progression</h2>
@@ -133,15 +161,25 @@ export default function Dashboard() {
           </p>
         )}
 
-        {progressionLoading && <p>Loading progression...</p>}
+        {progressionLoading && (
+          <>
+            <span className="skeleton skeleton-line" />
+            <span className="skeleton skeleton-line short" />
+          </>
+        )}
 
         {!progressionLoading && progressionList.length === 0 && routineDays.length > 0 && (
           <p>No progression data yet for this day.</p>
         )}
 
         {!progressionLoading && progressionList.map((p) => (
-          <div key={p.exercise} className={`progression-item ${p.suggestion}`}>
-            <strong>{p.exercise}</strong>
+          <div key={p.exercise} className="progression-item">
+            <div className="progression-item-head">
+              <strong>{p.exercise}</strong>
+              <span className={`status-chip ${p.suggestion}`}>
+                {SUGGESTION_LABELS[p.suggestion] ?? p.suggestion}
+              </span>
+            </div>
             <p>{p.message}</p>
           </div>
         ))}
