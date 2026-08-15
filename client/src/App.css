@@ -138,7 +138,21 @@ a:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
   margin-bottom: 32px;
+}
+
+.dashboard-header a {
+  color: var(--brass);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.dashboard-header a:hover {
+  text-decoration: underline;
 }
 
 .dashboard-header h1 {
@@ -269,6 +283,23 @@ a:focus-visible {
 
 .set-row input {
   flex: 1;
+  min-width: 0;
+}
+
+.warmup-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--chalk-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* The form's `input { width: 100% }` would otherwise stretch the checkbox
+   across the whole row. */
+.warmup-checkbox input {
+  width: auto;
 }
 
 .set-row button {
@@ -672,4 +703,57 @@ a:focus-visible {
   font-size: 12px;
   opacity: 0.6;
   margin: 0;
+}
+
+/* Phone / gym use. 600px covers phones and small tablets in portrait.
+   This is not a layout rewrite — the app is already a single column —
+   it just stops a few desktop-flex rows from overflowing, and stops
+   iOS from zooming the page on focus (Safari does that for any input
+   whose computed font-size is under 16px). */
+@media (max-width: 600px) {
+  .dashboard {
+    padding: 24px 16px calc(48px + env(safe-area-inset-bottom));
+  }
+
+  .dashboard-header h1 {
+    flex: 1 0 100%;
+    font-size: 22px;
+  }
+
+  .auth-form input,
+  .workout-form input,
+  .workout-form textarea,
+  .meal-description-input,
+  .grams-input-label input {
+    font-size: 16px;
+  }
+
+  .set-row {
+    flex-wrap: wrap;
+  }
+
+  .set-row input {
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .routine-day-item {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .routine-day-item > div:first-child {
+    flex: 1 1 100%;
+  }
+
+  .edit-day,
+  .delete-day,
+  .day-tab,
+  .dashboard-header button {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .macro-row {
+    flex-wrap: wrap;
+  }
 }
