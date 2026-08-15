@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  A full-stack fitness coach that logs your workouts, tells you exactly when to add weight using a real progressive-overload model, watches your squat form through your webcam in real time, and estimates calories from a photo of your meal. Built for myself and a handful of close friends who actually train — not a demo.
+  A full-stack fitness coach that logs your workouts, tells you exactly when to add weight using a real progressive-overload model, watches your squat form through your webcam in real time, and tracks calories from either a photo of your meal or a scan of its barcode. Built for myself and a handful of close friends who actually train — not a demo.
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@
 
 I train five days a week and already used a fitness app daily, so I knew exactly what was missing from the generic trackers: **real progression logic**, not just a logbook, and **form feedback** that doesn't require a training partner standing next to you with a stopwatch.
 
-AI Fitness Coach solves both. Log a workout with a target rep range and RIR (Reps In Reserve), and the app tells you whether to add weight, hold steady, or deload — based on how your actual sets performed, not a guess. Turn on your webcam before a squat and get live feedback on whether you hit real depth, powered by client-side pose estimation. Snap a photo of your meal and get a calorie estimate back from Gemini Vision, with the photo itself never stored anywhere.
+AI Fitness Coach solves both. Log a workout with a target rep range and RIR (Reps In Reserve), and the app tells you whether to add weight, hold steady, or deload — based on how your actual sets performed, not a guess. Turn on your webcam before a squat and get live feedback on whether you hit real depth, powered by client-side pose estimation. Snap a photo of your meal and get a calorie estimate back from Gemini Vision, with the photo itself never stored anywhere. For packaged food, scanning the barcode skips the estimate entirely and pulls the manufacturer's own published numbers.
 
 ---
 
@@ -54,6 +54,7 @@ AI Fitness Coach solves both. Log a workout with a target rep range and RIR (Rep
 3. **Build your split** — define named training days (Push, Pull, Legs, or anything else) and assign exercises to each. The dashboard shows progression grouped by day, and remembers your plan even through a training gap.
 4. **Check your squat form** — enable your camera, and MediaPipe tracks your hip, knee, and ankle in real time, flagging "Good depth!" or "Not deep enough" the instant you complete a rep.
 5. **Log a meal** — take or upload a photo, and Gemini Vision identifies the food and estimates its calories. The photo is analyzed and discarded — only the result is saved.
+6. **Or scan a barcode** — for packaged food, point your camera at the barcode and the app looks up exact per-100g nutrition from Open Food Facts. Enter how many grams you actually ate and it scales the macros to match, saving the same shape of record the photo pipeline produces.
 
 ---
 
@@ -75,6 +76,7 @@ AI Fitness Coach solves both. Log a workout with a target rep range and RIR (Rep
 - **Finding a hysteresis bug through data, not observation.** Inspecting real logged timestamps revealed multiple squat reps recorded within a couple of seconds — physically impossible. Ordinary standing sway was crossing the rep-detection threshold and back. Fixed with two independent safeguards: a minimum time between logged reps, and a separate, stricter threshold for *starting* to track a rep versus *ending* one — the same principle a thermostat uses to avoid rapidly flipping on and off at its target temperature.
 - **Surviving a shared API rate limit.** Meal photo analysis hit a 429 from Gemini during testing. The error's short retry hint suggested a brief per-minute limit — but retrying still failed. Checking the live usage dashboard revealed both a per-minute *and* a per-day quota were exhausted. Since each Gemini model tracks its quota independently, the fix pools seven models into one fallback chain, turning a 20-request daily ceiling into roughly 1,080.
 - **A React crash from a timing assumption.** Calling the pose-detection model before the video had real frame data threw an error inside a `useEffect` — and with no error boundary in the app, React's response was to unmount the entire component tree, not just the camera widget. Fixed with a readiness check and defensive error handling around every detection call.
+- **A bug that hid itself by being `async`.** The barcode scanner opened the camera but seemed never to read anything, while the console filled with decode failures — which turned out to be normal per-frame misses, not the problem. The actual fault was one call to a method the scanning library removed in the version installed. That should have been a loud crash on the first successful scan, but because the callback was declared `async`, the error became an unhandled promise rejection that slipped past the library's own `try/catch`, silently skipping every line after it while the scan loop kept running. Generalizable lesson: handing an `async` callback to a library that invokes it inside a `try/catch` quietly disables that safety net.
 
 See [`docs/decisions.md`](docs/decisions.md) for the full running log of every design decision and bug found during development.
 
@@ -87,6 +89,7 @@ See [`docs/decisions.md`](docs/decisions.md) for the full running log of every d
 - **React (Vite)** — component UI and build tooling
 - **React Router** — client-side routing
 - **Axios** — HTTP client with automatic JWT attachment
+- **ZXing (`@zxing/browser`)** — client-side barcode decoding from the live camera feed
 
 ### Backend
 
@@ -99,6 +102,7 @@ See [`docs/decisions.md`](docs/decisions.md) for the full running log of every d
 - **MongoDB Atlas** — primary database
 - **MediaPipe Tasks Vision (PoseLandmarker)** — client-side pose estimation
 - **Gemini Vision API (`@google/genai`)** — meal photo analysis, multi-model fallback
+- **Open Food Facts API** — packaged-food nutrition lookup by barcode (open data, no API key needed)
 
 ### Deployment
 
@@ -194,6 +198,8 @@ AI-Fitness-Coach/
 
 - **[MediaPipe](https://developers.google.com/mediapipe)** — real-time pose estimation
 - **[Google Gemini](https://ai.google.dev/)** — meal photo analysis
+- **[Open Food Facts](https://world.openfoodfacts.org/)** — open nutrition database behind barcode lookup
+- **[ZXing](https://github.com/zxing-js/browser)** — in-browser barcode decoding
 - **[MongoDB Atlas](https://www.mongodb.com/atlas)** — free-tier database hosting
 - **[Render](https://render.com/)** / **[Vercel](https://vercel.com/)** — free-tier deployment
 - **Cursor** — AI-powered IDE used throughout development
